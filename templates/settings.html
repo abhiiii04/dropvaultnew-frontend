@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="settings-container">
+  <h1> Account Settings</h1>
+  <p>Manage your account, storage, privacy, and preferences.</p>
+
+  <!--  Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, msg in messages %}
+    <div class="flash {{ category }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="settings-grid">
+    <!-- Profile Info -->
+    <section class="settings-card">
+      <h2> Profile</h2>
+      <form action="{{ url_for('update_profile') }}" method="POST">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ user.username }}" required>
+
+        <label>Email</label>
+        <input type="email" name="email" value="{{ user.email }}" required>
+
+        <label>Profile Picture</label>
+        <input type="file" name="avatar">
+
+        <button type="submit" class="btn-save">Save Profile</button>
+      </form>
+    </section>
+
+    <!-- Storage Management -->
+    <section class="settings-card">
+      <h2> Storage</h2>
+      <div class="storage-progress">
+        <div class="progress-bar" style="width: {{ storage.percent_used }}%;"></div>
+      </div>
+      <p><strong>{{ storage.used }} MB</strong> of <strong>{{ storage.total }} MB</strong> used</p>
+      <button class="btn-manage">Manage Files</button>
+    </section>
+
+    <!-- Security Options -->
+    <section class="settings-card">
+      <h2> Security</h2>
+      <form action="{{ url_for('update_password') }}" method="POST">
+        <label>Change Password</label>
+        <input type="password" name="password" placeholder="Enter new password">
+        <button type="submit" class="btn-save">Update Password</button>
+      </form>
+
+      <form action="{{ url_for('toggle_2fa') }}" method="POST" style="margin-top: 1rem;">
+        <p>Two-Factor Authentication:
+          {% if user.twofa_enabled %}
+          <span class="enabled">Enabled ✅</span>
+          <button class="btn-disable">Disable</button>
+          {% else %}
+          <span class="disabled">Disabled ❌</span>
+          <button class="btn-enable">Enable</button>
+          {% endif %}
+        </p>
+      </form>
+    </section>
+
+    <!-- Preferences -->
+    <section class="settings-card">
+      <h2> Preferences</h2>
+      <form action="{{ url_for('update_preferences') }}" method="POST">
+        <label>Theme</label>
+        <select name="theme">
+          <option value="light" {% if user.theme == 'light' %}selected{% endif %}>Light</option>
+          <option value="dark" {% if user.theme == 'dark' %}selected{% endif %}>Dark</option>
+        </select>
+
+        <label>Notifications</label>
+        <select name="notifications">
+          <option value="all" {% if user.notifications == 'all' %}selected{% endif %}>All</option>
+          <option value="important" {% if user.notifications == 'important' %}selected{% endif %}>Important Only</option>
+          <option value="none" {% if user.notifications == 'none' %}selected{% endif %}>None</option>
+        </select>
+
+        <button type="submit" class="btn-save">Save Preferences</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

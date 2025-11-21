@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="shared-container">
+  <h1>Shared Files</h1>
+  <p>Manage your shared links, check expiry, and copy links easily.</p>
+
+  <table class="shared-table">
+    <thead>
+      <tr>
+        <th>File Name</th>
+        <th>Share Link</th>
+        <th>Expiry</th>
+        <th>QR Code</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody id="shared-list">
+      <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
+
+// Load shared files from backend API
+async function loadSharedFiles() {
+    const token = localStorage.getItem("token");
+    if (!token) return window.location.href = "/login";
+
+    const table = document.getElementById("shared-list");
+
+    try {
+        const res = await fetch(`${API_BASE}/files/shared/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.shared || data.shared.length === 0) {
+            table.innerHTML = `<tr><td colspan="5" style="text-align:center;">No shared files found.</td></tr>`;
+            return;
+        }
+
+        table.innerHTML = ""; // Clear loader
+
+        data.shared.forEach((f, index) => {
+            table.innerHTML += `
+                <tr>
+                    <td>${f.filename}</td>
+
+                    <td>
+                      <input type="text" id="link${index}" value="${API_BASE}${f.share_url}" readonly>
+                      <button onclick="copyLink('link${index}')">Copy</button>
+                    </td>
+
+                    <td>${f.expiry ? new Date(f.expiry).toLocaleString() : "No expiry"}</td>
+
+                    <td>
+                      <img src="${API_BASE}${f.qr_code}" class="qr-small" alt="QR Code">
+                    </td>
+
+                    <td>
+                      <button class="delete-btn" onclick="deleteShared(${f.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        table.innerHTML = `<tr><td colspan="5" style="text-align:center;">⚠ Error loading shared files.</td></tr>`;
+    }
+}
+
+// Copy share link
+window.copyLink = function (id) {
+    const input = document.getElementById(id);
+    input.select();
+    input.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("🔗 Link copied!");
+};
+
+// Delete share link
+window.deleteShared = async function (fileId) {
+    if (!confirm("Are you sure you want to delete this shared link?")) return;
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API_BASE}/files/share/delete/${fileId}/`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+        alert("🗑 Deleted!");
+        loadSharedFiles();
+    } else {
+        alert("❌ Delete failed.");
+    }
+};
+
+loadSharedFiles(); // Auto-load on page open
+</script>
+
+{% endblock %}

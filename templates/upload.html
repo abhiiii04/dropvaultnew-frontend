@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="upload-container">
+  <h1>Upload Files</h1>
+  <p>Securely upload your files to DropVault and generate an expiring share link.</p>
+
+  <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+    <label for="file">Select File</label>
+    <input type="file" name="file" id="file" required>
+
+    <button type="submit" class="btn-upload">Upload</button>
+  </form>
+
+  {% if message %}
+  <p class="success-msg">{{ message }}</p>
+  {% endif %}
+</div>
+{% endblock %}

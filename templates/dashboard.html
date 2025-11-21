@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="main">
+  <h1>Welcome to DropVault</h1>
+  <p>Secure. Simple. Yours.</p>
+
+  <div class="dashboard-cards">
+    <div class="card">
+      <h3>Storage Used</h3>
+      <p><strong>{{ storage.used }} GB</strong> / {{ storage.total }} GB used</p>
+      <div class="progress-container">
+        <div class="progress-bar" style="width: {{ storage.percent_used }}%;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Recent Uploads</h3>
+      <ul>
+        {% for file in recent_files %}
+        <li>{{ file }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Shared Files</h3>
+      <p>{{ shared_count }} shared this week</p>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <h2>Your Files</h2>
+    <table class="dashboard-table">
+      <thead>
+        <tr>
+          <th>Filename</th>
+          <th>Expires</th>
+          <th>Link</th>
+          <th>Download</th>
+          <th>QR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in files %}
+        <tr>
+          <td>{{ f.filename }}</td>
+          <td>{{ f.expiry }}</td>
+          <td><a href="{{ f.link }}" target="_blank">Open</a></td>
+          <td><a href="{{ url_for('shared_download', token=f.token) }}" class="btn small">⬇️</a></td>
+          <td><img src="{{ f.qr }}" alt="QR Code" class="qr-small"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

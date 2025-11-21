@@ -1,0 +1,27 @@
+import { API_BASE, authHeader } from "/static/js/api.js";
+
+async function loadFiles() {
+  const res = await fetch(`${API_BASE}/files/list/`, {
+    headers: authHeader()
+  });
+
+  const data = await res.json();
+
+  const grid = document.getElementById("files-grid");
+  grid.innerHTML = "";
+
+  data.files.forEach(f => {
+    grid.innerHTML += `
+      <div class="file-card">
+        <div class="file-info">
+          <h3>${f.filename}</h3>
+        </div>
+        <div class="file-actions">
+          <a href="${API_BASE}${f.download_url}" target="_blank">Download</a>
+        </div>
+      </div>
+    `;
+  });
+}
+
+loadFiles();
