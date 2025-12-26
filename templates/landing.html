@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>DropVault - Secure Cloud Storage</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+  <!-- Use static CSS file from your frontend -->
+  <link rel="stylesheet" href="/static/css/landing.css">
 </head>
 
 <body>
@@ -16,8 +17,9 @@
     </div>
 
     <div class="nav-right">
-      <a href="/login" class="btn-login">Login</a>
-      <a href="/register" class="btn-signup">Sign Up</a>
+      <!-- UPDATED LINKS TO BACKEND -->
+      <a href="https://dropvault-2.onrender.com/login" class="btn-login">Login</a>
+      <a href="https://dropvault-2.onrender.com/register" class="btn-signup">Sign Up</a>
     </div>
   </nav>
 
@@ -30,7 +32,8 @@
     </p>
 
     <div class="hero-buttons">
-      <a href="/register" class="btn-primary">Get Started Free</a>
+      <!-- Make CTA go to backend register page -->
+      <a href="https://dropvault-2.onrender.com/register" class="btn-primary">Get Started Free</a>
       <a href="#" class="btn-outline">Learn More</a>
     </div>
   </section>
