@@ -1,12 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os, sqlite3, qrcode
 from datetime import datetime, timedelta
 
 # --------------------------------
-# APP CONFIGURATION
+# CONFIG
 # --------------------------------
 app = Flask(__name__)
+CORS(app)  # allow frontend to connect
 app.secret_key = "dropvault_secure_key"
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -17,23 +19,19 @@ os.makedirs(app.config['QR_FOLDER'], exist_ok=True)
 DB_FILE = "database.db"
 
 # --------------------------------
-# DATABASE INITIALIZATION
+# DB INIT
 # --------------------------------
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Users table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         email TEXT UNIQUE,
-        password TEXT,
-        theme TEXT DEFAULT 'light',
-        notifications TEXT DEFAULT 'all'
+        password TEXT
     )''')
 
-    # Files table
     c.execute('''CREATE TABLE IF NOT EXISTS files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -50,196 +48,146 @@ def init_db():
 init_db()
 
 # --------------------------------
-# LANDING PAGE (Public before login)
+# API: REGISTER
 # --------------------------------
-@app.route("/")
-def landing():
-    return render_template("landing.html")
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
 
-
-# --------------------------------
-# AUTH ROUTES
-# --------------------------------
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute("SELECT id, name FROM users WHERE email=? AND password=?", (email, password))
-        user = c.fetchone()
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+        conn.commit()
+        return jsonify({"success": True, "message": "User registered"}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"success": False, "message": "Email already exists"}), 400
+    finally:
         conn.close()
 
-        if user:
-            session["user_id"] = user[0]
-            session["user_name"] = user[1]
-            flash("Login successful ✅")
-            return redirect(url_for("dashboard"))
-        else:
-            flash("Invalid credentials ❌")
-    return render_template("login.html")
+# --------------------------------
+# API: LOGIN
+# --------------------------------
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
 
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM users WHERE email=? AND password=?", (email, password))
+    user = c.fetchone()
+    conn.close()
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        password = request.form["password"]
+    if not user:
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        try:
-            c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
-            conn.commit()
-            flash("Registration successful 🎉 Please log in.")
-            return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
-            flash("Email already registered ❌")
-        finally:
-            conn.close()
-    return render_template("register.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("Logged out successfully ✅")
-    return redirect(url_for("login"))
-
+    return jsonify({
+        "success": True,
+        "message": "Login successful",
+        "token": str(user[0]),
+        "name": user[1]
+    }), 200
 
 # --------------------------------
-# DASHBOARD
+# API: DASHBOARD
 # --------------------------------
-@app.route("/dashboard")
+@app.route("/api/dashboard", methods=["GET"])
 def dashboard():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
+    user_id = request.headers.get("Authorization")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT filename, token, expiry, qr_path FROM files WHERE user_id=?", (session["user_id"],))
+    c.execute("SELECT filename, token, expiry, qr_path FROM files WHERE user_id=?", (user_id,))
     rows = c.fetchall()
     conn.close()
 
-    files = []
-    for r in rows:
-        files.append({
-            "filename": r[0],
-            "expiry": r[2],
-            "link": f"/shared/{r[1]}",
-            "token": r[1],
-            "qr": r[3]
-        })
+    files = [{
+        "filename": r[0],
+        "expiry": r[2],
+        "download_url": f"https://dropvault-2.onrender.com/shared/{r[1]}",
+        "qr": f"https://dropvault-2.onrender.com/{r[3]}"
+    } for r in rows]
 
-    storage = {"used": 1.2, "total": 10, "percent_used": 12}
-    recent_files = [f["filename"] for f in files[-3:]]
-    shared_count = len(files)
-
-    return render_template("dashboard.html", 
-                           user_name=session.get("user_name"),
-                           storage=storage,
-                           recent_files=recent_files,
-                           shared_count=shared_count,
-                           files=files)
-
-
+    return jsonify({
+        "storage": {"used": 1.2, "total": 10, "percent": 12},
+        "recent_files": [f["filename"] for f in files[-3:]],
+        "shared_count": len(files),
+        "files": files
+    })
 
 # --------------------------------
-# UPLOAD
+# API: UPLOAD
 # --------------------------------
-@app.route("/upload", methods=["GET", "POST"])
-def upload():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    user_id = request.headers.get("Authorization")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
 
-    if request.method == "POST":
-        file = request.files["file"]
-        expiry_hours = int(request.form.get("expiry", 24))  # default 24 hrs
+    file = request.files["file"]
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    file.save(filepath)
 
-        if file:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+    expiry = datetime.now() + timedelta(hours=24)
+    token = f"{int(datetime.now().timestamp())}_{filename.replace(' ', '')}"
+    share_url = f"https://dropvault-2.onrender.com/shared/{token}"
 
-            expiry_time = datetime.now() + timedelta(hours=expiry_hours)
-            token = f"{int(datetime.now().timestamp())}_{filename.replace(' ', '_')}"
-            link = f"http://127.0.0.1:5000/shared/{token}"
-
-            # Generate QR code
-            qr_img = qrcode.make(link)
-            qr_path = os.path.join(app.config['QR_FOLDER'], f"{token}.png")
-            qr_img.save(qr_path)
-
-            conn = sqlite3.connect(DB_FILE)
-            c = conn.cursor()
-            c.execute("INSERT INTO files (user_id, filename, token, expiry, qr_path) VALUES (?, ?, ?, ?, ?)",
-                      (session["user_id"], filename, token, expiry_time, qr_path))
-            conn.commit()
-            conn.close()
-
-            flash("File uploaded successfully ✅")
-            return redirect(url_for("myfiles"))
-
-    return render_template("upload.html")
-
-
-# --------------------------------
-# MY FILES
-# --------------------------------
-@app.route("/myfiles")
-def myfiles():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
+    qr_img = qrcode.make(share_url)
+    qr_path = os.path.join(app.config["QR_FOLDER"], f"{token}.png")
+    qr_img.save(qr_path)
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT filename, token, expiry, qr_path FROM files WHERE user_id=?", (session["user_id"],))
-    files = []
-    for row in c.fetchall():
-        expiry = datetime.fromisoformat(row[2])
-        files.append({
-            "filename": row[0],
-            "expiry": expiry.strftime("%Y-%m-%d %H:%M"),
-            "link": f"/shared/{row[1]}",
-            "qr": row[3]
-        })
+    c.execute("INSERT INTO files (user_id, filename, token, expiry, qr_path) VALUES (?, ?, ?, ?, ?)",
+              (user_id, filename, token, expiry, qr_path))
+    conn.commit()
     conn.close()
 
-    return render_template("myfiles.html", files=files)
-
+    return jsonify({
+        "success": True,
+        "share_url": share_url,
+        "qr_code": f"https://dropvault-2.onrender.com/{qr_path}"
+    })
 
 # --------------------------------
-# SHARED FILES
+# API: SHARED FILES LIST
 # --------------------------------
-@app.route("/shared")
-def shared_files():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
+@app.route("/api/shared", methods=["GET"])
+def shared_list():
+    user_id = request.headers.get("Authorization")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT filename, token, expiry, qr_path FROM files WHERE user_id=?", (session["user_id"],))
+    c.execute("SELECT id, filename, token, expiry, qr_path FROM files WHERE user_id=?", (user_id,))
     rows = c.fetchall()
     conn.close()
 
-    files = []
-    for r in rows:
-        expiry = datetime.fromisoformat(r[2])
-        remaining = expiry - datetime.now()
-        files.append({
-            "filename": r[0],
-            "link": f"http://127.0.0.1:5000/shared/{r[1]}",
-            "expiry": expiry.strftime("%Y-%m-%d %H:%M:%S"),
-            "remaining": str(remaining).split('.')[0],
-            "qr": r[3]
-        })
+    files = [{
+        "id": r[0],
+        "filename": r[1],
+        "expiry": r[3],
+        "share_url": f"/shared/{r[2]}",
+        "qr": f"/{r[4]}"
+    } for r in rows]
 
-    return render_template("shared.html", files=files)
+    return jsonify({"shared": files})
 
-
+# --------------------------------
+# DOWNLOAD SHARED FILE
+# --------------------------------
 @app.route("/shared/<token>")
 def shared_download(token):
     conn = sqlite3.connect(DB_FILE)
@@ -251,195 +199,14 @@ def shared_download(token):
     if not row:
         return "File not found ❌"
 
-    expiry = datetime.fromisoformat(row[1])
-    if datetime.now() > expiry:
+    if datetime.now() > datetime.fromisoformat(row[1]):
         return "This link has expired ⏰"
 
-    return send_from_directory(app.config['UPLOAD_FOLDER'], row[0], as_attachment=True)
-
-
-# --------------------------------
-# SETTINGS & PROFILE MANAGEMENT
-# --------------------------------
-def get_current_user():
-    if "user_id" not in session:
-        return None
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT name, email, theme, notifications FROM users WHERE id=?", (session["user_id"],))
-    row = c.fetchone()
-    conn.close()
-    if row:
-        return {
-            "username": row[0],
-            "email": row[1],
-            "theme": row[2],
-            "notifications": row[3],
-            "twofa_enabled": False
-        }
-    return None
-
-
-@app.route("/settings")
-def settings():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    user = get_current_user()
-
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM files WHERE user_id=?", (session["user_id"],))
-    count = c.fetchone()[0]
-    conn.close()
-
-    storage = {
-        "used": count * 10,
-        "total": 1000,
-        "percent_used": min((count * 10 / 1000) * 100, 100)
-    }
-
-    return render_template("settings.html", user=user, storage=storage)
-
-
-@app.route("/update_profile", methods=["POST"])
-def update_profile():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    username = request.form.get("username")
-    email = request.form.get("email")
-
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("UPDATE users SET name=?, email=? WHERE id=?", (username, email, session["user_id"]))
-    conn.commit()
-    conn.close()
-
-    flash("Profile updated successfully ✅")
-    return redirect(url_for("settings"))
-
-
-@app.route("/update_password", methods=["POST"])
-def update_password():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    password = request.form.get("password")
-    if not password:
-        flash("Please enter a new password ❌")
-        return redirect(url_for("settings"))
-
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("UPDATE users SET password=? WHERE id=?", (password, session["user_id"]))
-    conn.commit()
-    conn.close()
-
-    flash("Password updated successfully 🔒")
-    return redirect(url_for("settings"))
-
-
-@app.route("/update_preferences", methods=["POST"])
-def update_preferences():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    theme = request.form.get("theme")
-    notifications = request.form.get("notifications")
-
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("UPDATE users SET theme=?, notifications=? WHERE id=?", (theme, notifications, session["user_id"]))
-    conn.commit()
-    conn.close()
-
-    flash("Preferences updated successfully 🎨")
-    return redirect(url_for("settings"))
-
-@app.route("/toggle_2fa", methods=["POST"])
-def toggle_2fa():
-    """Toggle Two-Factor Authentication for the user"""
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    
-    # (You can store 2FA status in DB; for now, simulate in session)
-    session["twofa_enabled"] = not session.get("twofa_enabled", False)
-    status = "enabled ✅" if session["twofa_enabled"] else "disabled ❌"
-    flash(f"Two-Factor Authentication {status}", "success")
-    return redirect(url_for("settings"))
-
-@app.route("/google-login")
-def google_login():
-    # Redirect to Google OAuth URL
-    GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
-
-    client_id = "111787939348-abcnn6fk3bt6i5sshc93pv13g6vgjjub.apps.googleusercontent.com"
-    redirect_uri = "http://127.0.0.1:5000/google-callback"
-
-    scope = "email profile"
-
-    auth_url = (
-        f"{GOOGLE_AUTH_URL}?response_type=code"
-        f"&client_id={client_id}"
-        f"&redirect_uri={redirect_uri}"
-        f"&scope={scope}"
-    )
-
-    return redirect(auth_url)
-
-from google.oauth2 import id_token
-from google.auth.transport import requests as grequests
-
-@app.route("/google-callback")
-def google_callback():
-    token = request.args.get("credential") or request.args.get("code")
-    if not token:
-        return "Google login failed ❌", 400
-
-    try:
-        # Verify Google token
-        idinfo = id_token.verify_oauth2_token(
-            token,
-            grequests.Request(),
-            "YOUR_GOOGLE_CLIENT_ID"
-        )
-
-        email = idinfo.get("email")
-        name = idinfo.get("name")
-
-        # Auto-register user if not existing
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute("SELECT id FROM users WHERE email=?", (email,))
-        user = c.fetchone()
-
-        if not user:
-            c.execute(
-                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-                (name, email, "google_oauth")
-            )
-            conn.commit()
-            user_id = c.lastrowid
-        else:
-            user_id = user[0]
-
-        conn.close()
-
-        # Login user
-        session["user_id"] = user_id
-        session["user_name"] = name
-
-        return redirect(url_for("dashboard"))
-
-    except ValueError:
-        return "Invalid token ❌", 400
-
+    return send_from_directory("uploads", row[0], as_attachment=True)
 
 # --------------------------------
-# APP RUNNER
+# DEPLOY
 # --------------------------------
 if __name__ == "__main__":
     from waitress import serve
     serve(app, host="0.0.0.0", port=10000)
-

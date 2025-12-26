@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title if title else 'DropVault' }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <title>DropVault</title>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
+
   <!-- Sidebar -->
   <div class="sidebar">
     <h2>DropVault</h2>
     <nav>
-      <a href="{{ url_for('dashboard') }}">Dashboard</a>
-      <a href="{{ url_for('upload') }}">Upload</a>
-      <a href="{{ url_for('myfiles') }}">My Files</a>
-      <a href="{{ url_for('shared_files') }}">Shared</a>
-      <a href="{{ url_for('settings') }}">Settings</a>
-      <a href="{{ url_for('logout') }}">Logout</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/upload.html">Upload</a>
+      <a href="/myfiles.html">My Files</a>
+      <a href="/shared.html">Shared</a>
+      <a href="/settings.html">Settings</a>
+      <a href="#" id="logoutBtn">Logout</a>
     </nav>
   </div>
 
@@ -26,124 +27,19 @@
     {% block content %}{% endblock %}
   </div>
 
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <!-- Chatbot + Scripts (unchanged) -->
+  <script src="/static/js/main.js"></script>
 
-  <!-- Chatbot Widget -->
-  <div id="chatbot-container">
-    <!-- Chat toggle button -->
-    <button id="chatbot-toggle" class="chatbot-toggle" title="Chat with DropVault Assistant">💬</button>
+  <script type="module">
+    // 🌍 Backend API base URL
+    export const API_BASE = "https://dropvault-2.onrender.com";
 
-    <!-- Chat window -->
-    <div id="chatbox" class="chatbox hidden">
-      <div class="chat-header">
-        <h4>DropVault Assistant</h4>
-        <button id="chat-close" class="chat-close">✖</button>
-      </div>
-
-      <div class="chat-body" id="chat-body">
-        <div class="bot-message"> Hi there! I’m your DropVault Assistant. How can I help you today?</div>
-      </div>
-
-      <div class="chat-footer">
-        <input type="text" id="user-input" placeholder="Type your message..." />
-        <button id="send-btn" class="send-btn">➤</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Chatbot Script -->
-  <script>
-    const toggleBtn = document.getElementById("chatbot-toggle");
-    const chatBox = document.getElementById("chatbox");
-    const closeBtn = document.getElementById("chat-close");
-    const sendBtn = document.getElementById("send-btn");
-    const input = document.getElementById("user-input");
-    const chatBody = document.getElementById("chat-body");
-
-    // Show chatbot window
-    toggleBtn.addEventListener("click", () => {
-      chatBox.classList.remove("hidden");
-      toggleBtn.style.display = "none"; 
-      input.focus();
+    // 🚪 Logout
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
     });
-
-    // Close chatbot window
-    closeBtn.addEventListener("click", () => {
-      chatBox.classList.add("hidden");
-      toggleBtn.style.display = "flex"; 
-    });
-
-    // Send message
-    sendBtn.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    function sendMessage() {
-      const userText = input.value.trim();
-      if (!userText) return;
-      appendMessage(userText, "user");
-      input.value = "";
-
-      setTimeout(() => {
-        appendTypingIndicator();
-        setTimeout(() => {
-          removeTypingIndicator();
-          const botReply = getBotResponse(userText.toLowerCase());
-          appendMessage(botReply, "bot");
-          chatBody.scrollTop = chatBody.scrollHeight;
-        }, 1000);
-      }, 400);
-    }
-
-    function appendMessage(text, sender) {
-      const msg = document.createElement("div");
-      msg.classList.add(sender === "user" ? "user-message" : "bot-message");
-      msg.textContent = text;
-      chatBody.appendChild(msg);
-      chatBody.scrollTop = chatBody.scrollHeight;
-    }
-
-    function appendTypingIndicator() {
-      const typing = document.createElement("div");
-      typing.classList.add("bot-message", "typing");
-      typing.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
-      chatBody.appendChild(typing);
-    }
-
-    function removeTypingIndicator() {
-      const typing = document.querySelector(".typing");
-      if (typing) typing.remove();
-    }
-
-    // Simple human-style responses
-    function getBotResponse(message) {
-      if (message.includes("hello") || message.includes("hi")) {
-        return "Hey there! What would you like to do today — upload, share, or manage your files?";
-      }
-      if (message.includes("upload")) {
-        return " Go to the Upload page, pick your file, and press 'Upload'. You’ll find it under My Files.";
-      }
-      if (message.includes("share")) {
-        return " To share a file, open My Files and click the 'Generate Link' button next to your file.";
-      }
-      if (message.includes("storage") || message.includes("limit")) {
-        return " You have 10 GB of secure storage. Check your usage anytime on the Dashboard.";
-      }
-      if (message.includes("delete")) {
-        return " File deletion is coming soon! You’ll be able to manage your files directly in My Files.";
-      }
-      if (message.includes("settings")) {
-        return " You can adjust your preferences or account info in the Settings section.";
-      }
-      if (message.includes("logout")) {
-        return " Use the Logout option on the sidebar to safely sign out.";
-      }
-      if (message.includes("help")) {
-        return " Sure! I can help with uploading, sharing, and storage details. What would you like to know?";
-      }
-      return " I didn’t quite catch that. Try asking me about uploads, sharing, or storage.";
-    }
   </script>
+
 </body>
 </html>

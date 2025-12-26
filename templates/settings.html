@@ -1,90 +1,160 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="settings-container">
-  <h1> Account Settings</h1>
+  <h1>Account Settings</h1>
   <p>Manage your account, storage, privacy, and preferences.</p>
 
-  <!--  Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="flash-container">
-    {% for category, msg in messages %}
-    <div class="flash {{ category }}">{{ msg }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
-
   <div class="settings-grid">
-    <!-- Profile Info -->
+
+    <!-- PROFILE INFO -->
     <section class="settings-card">
-      <h2> Profile</h2>
-      <form action="{{ url_for('update_profile') }}" method="POST">
+      <h2>Profile</h2>
+      <form id="profileForm">
         <label>Username</label>
-        <input type="text" name="username" value="{{ user.username }}" required>
+        <input type="text" id="username" required>
 
         <label>Email</label>
-        <input type="email" name="email" value="{{ user.email }}" required>
+        <input type="email" id="email" required>
 
         <label>Profile Picture</label>
-        <input type="file" name="avatar">
+        <input type="file" id="avatar">
 
         <button type="submit" class="btn-save">Save Profile</button>
       </form>
     </section>
 
-    <!-- Storage Management -->
+    <!-- STORAGE -->
     <section class="settings-card">
-      <h2> Storage</h2>
+      <h2>Storage</h2>
       <div class="storage-progress">
-        <div class="progress-bar" style="width: {{ storage.percent_used }}%;"></div>
+        <div id="storageBar" class="progress-bar" style="width: 0%;"></div>
       </div>
-      <p><strong>{{ storage.used }} MB</strong> of <strong>{{ storage.total }} MB</strong> used</p>
+      <p><strong id="usedStorage">0 MB</strong> of <strong id="totalStorage">0 MB</strong> used</p>
       <button class="btn-manage">Manage Files</button>
     </section>
 
-    <!-- Security Options -->
+    <!-- SECURITY -->
     <section class="settings-card">
-      <h2> Security</h2>
-      <form action="{{ url_for('update_password') }}" method="POST">
+      <h2>Security</h2>
+      <form id="passwordForm">
         <label>Change Password</label>
-        <input type="password" name="password" placeholder="Enter new password">
-        <button type="submit" class="btn-save">Update Password</button>
+        <input type="password" id="newPassword" placeholder="Enter new password">
+        <button class="btn-save" type="submit">Update Password</button>
       </form>
 
-      <form action="{{ url_for('toggle_2fa') }}" method="POST" style="margin-top: 1rem;">
-        <p>Two-Factor Authentication:
-          {% if user.twofa_enabled %}
-          <span class="enabled">Enabled ✅</span>
-          <button class="btn-disable">Disable</button>
-          {% else %}
-          <span class="disabled">Disabled ❌</span>
-          <button class="btn-enable">Enable</button>
-          {% endif %}
-        </p>
-      </form>
+      <br>
+      <button id="toggle2FA" class="btn-enable">Toggle 2FA</button>
     </section>
 
-    <!-- Preferences -->
+    <!-- PREFERENCES -->
     <section class="settings-card">
-      <h2> Preferences</h2>
-      <form action="{{ url_for('update_preferences') }}" method="POST">
+      <h2>Preferences</h2>
+      <form id="prefsForm">
         <label>Theme</label>
-        <select name="theme">
-          <option value="light" {% if user.theme == 'light' %}selected{% endif %}>Light</option>
-          <option value="dark" {% if user.theme == 'dark' %}selected{% endif %}>Dark</option>
+        <select id="themeSelect">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
         </select>
 
         <label>Notifications</label>
-        <select name="notifications">
-          <option value="all" {% if user.notifications == 'all' %}selected{% endif %}>All</option>
-          <option value="important" {% if user.notifications == 'important' %}selected{% endif %}>Important Only</option>
-          <option value="none" {% if user.notifications == 'none' %}selected{% endif %}>None</option>
+        <select id="notifySelect">
+          <option value="all">All</option>
+          <option value="important">Important Only</option>
+          <option value="none">None</option>
         </select>
 
         <button type="submit" class="btn-save">Save Preferences</button>
       </form>
     </section>
+
   </div>
 </div>
+
+
+<!-- 🚀 FRONTEND API CALLS (Render Connected) -->
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
+
+const token = localStorage.getItem("token");
+if (!token) location.href = "/login";
+
+
+/* ---------------- LOAD USER DATA ---------------- */
+async function loadSettings(){
+  const res = await fetch(`${API_BASE}/user/profile`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  const data = await res.json();
+
+  document.getElementById("username").value = data.username;
+  document.getElementById("email").value = data.email;
+  document.getElementById("themeSelect").value = data.theme;
+  document.getElementById("notifySelect").value = data.notifications;
+
+  document.getElementById("storageBar").style.width = `${data.storage.percent}%`;
+  document.getElementById("usedStorage").innerText = `${data.storage.used} MB`;
+  document.getElementById("totalStorage").innerText = `${data.storage.total} MB`;
+}
+loadSettings();
+
+
+/* ---------------- UPDATE PROFILE ---------------- */
+document.getElementById("profileForm").addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const username = document.getElementById("username").value;
+  const email = document.getElementById("email").value;
+
+  const res = await fetch(`${API_BASE}/user/profile/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ username, email })
+  });
+
+  alert(res.ok ? "Profile Updated ✔️" : "Update Failed ❌");
+});
+
+
+/* ---------------- CHANGE PASSWORD ---------------- */
+document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const password = document.getElementById("newPassword").value;
+
+  const res = await fetch(`${API_BASE}/user/password/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ password })
+  });
+
+  alert(res.ok ? "Password Updated 🔒" : "Error ❌");
+});
+
+
+/* ---------------- TOGGLE 2FA ---------------- */
+document.getElementById("toggle2FA").addEventListener("click", async()=>{
+  const res = await fetch(`${API_BASE}/user/2fa/toggle`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  alert(res.ok ? "2FA Toggled 🔐" : "Request Failed ❌");
+  loadSettings();
+});
+
+
+/* ---------------- UPDATE PREFERENCES ---------------- */
+document.getElementById("prefsForm").addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const theme = document.getElementById("themeSelect").value;
+  const notifications = document.getElementById("notifySelect").value;
+
+  const res = await fetch(`${API_BASE}/user/preferences/update`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json", "Authorization":`Bearer ${token}` },
+    body: JSON.stringify({ theme, notifications })
+  });
+
+  alert(res.ok ? "Preferences Saved 🎨" : "Update Failed ❌");
+});
+</script>
+
 {% endblock %}

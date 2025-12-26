@@ -1,56 +1,64 @@
-//Copy Share link
+// ===============================
+// 🌐 API BASE URL (Render Backend)
+// ===============================
+const API_BASE = "https://dropvault-2.onrender.com";  // ✅ Update for live deployment
+
+
+// ===============================
+// 📌 Copy Share Link
+// ===============================
 function copyLink(id) {
   const input = document.getElementById(id);
   if (!input) return;
   input.select();
-  input.setSelectionRange(0, 99999); // For mobile
+  input.setSelectionRange(0, 99999);
   document.execCommand("copy");
-  alert("✅ Link copied to clipboard!");
+  alert("✅ Link copied!");
 }
 
-//Countdown Timer 
+
+// ===============================
+// ⏳ Countdown Timer
+// ===============================
 function startCountdown() {
   const timers = document.querySelectorAll(".countdown");
-
   timers.forEach(timer => {
     const expiry = new Date(timer.dataset.expiry);
     function updateCountdown() {
-      const now = new Date();
-      const diff = expiry - now;
+      const diff = expiry - new Date();
+      if (diff <= 0) return (timer.textContent = "⏰ Expired");
 
-      if (diff <= 0) {
-        timer.textContent = "⏰ Expired";
-        timer.classList.add("expired");
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      timer.textContent = `${hours}h ${minutes}m ${seconds}s left`;
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      timer.textContent = `${h}h ${m}m ${s}s left`;
     }
     updateCountdown();
     setInterval(updateCountdown, 1000);
   });
 }
 
-// Animate Progress Bar 
+
+// ===============================
+// 📊 Progress Bar Animation
+// ===============================
 function animateProgressBars() {
-  const bars = document.querySelectorAll(".progress-bar");
-  bars.forEach(bar => {
+  document.querySelectorAll(".progress-bar").forEach(bar => {
     const width = bar.style.width;
     bar.style.width = "0";
     setTimeout(() => {
-      bar.style.transition = "width 1s ease-in-out";
+      bar.style.transition = "width 1s";
       bar.style.width = width;
     }, 200);
   });
 }
 
-//  Run on Page Load 
-document.addEventListener("DOMContentLoaded", function () {
-    const uploadForm = document.getElementById("uploadForm");
+
+// ===============================
+// 🚀 Upload File API → Flask Backend
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+  const uploadForm = document.getElementById("uploadForm");
   if (uploadForm) {
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -61,15 +69,13 @@ document.addEventListener("DOMContentLoaded", function () {
   animateProgressBars();
 });
 
-const API_BASE = "http://127.0.0.1:8000";   // your Django backend
 
-// UPLOAD FILE FUNCTION
 async function uploadFileAPI() {
   const fileInput = document.getElementById("file");
   const msg = document.getElementById("upload-msg");
 
   if (!fileInput.files.length) {
-    msg.textContent = "❌ Please select a file.";
+    msg.textContent = "❌ No file selected.";
     msg.style.color = "red";
     return;
   }
@@ -78,10 +84,10 @@ async function uploadFileAPI() {
   formData.append("file", fileInput.files[0]);
 
   try {
-    const res = await fetch(`${API_BASE}/files/upload/`, {
+    const res = await fetch(`${API_BASE}/api/upload`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
+        "Authorization": localStorage.getItem("token") // user id stored after login
       },
       body: formData
     });
@@ -92,13 +98,44 @@ async function uploadFileAPI() {
       msg.textContent = "✅ File uploaded successfully!";
       msg.style.color = "green";
       fileInput.value = "";
+
+      // store generated link and show user
+      alert("🔗 Share link: " + data.share_url);
     } else {
-      msg.textContent = "❌ Upload failed: " + (data.message || "Try again.");
+      msg.textContent = "❌ Upload failed";
       msg.style.color = "red";
     }
 
-  } catch (err) {
-    msg.textContent = "❌ Server error. File not uploaded.";
+  } catch (error) {
+    msg.textContent = "🚨 Server Error. Try again.";
+    msg.style.color = "red";
+  }
+}
+
+
+// ===============================
+// 🔑 LOGIN FUNCTION (POST to Backend)
+// ===============================
+async function loginUser() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const msg = document.getElementById("login-msg");
+
+  const res = await fetch(`${API_BASE}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    localStorage.setItem("token", data.token); // store user id as token
+    msg.textContent = "✅ Login successful!";
+    msg.style.color = "green";
+    window.location.href = "/dashboard.html"; // redirect to dashboard
+  } else {
+    msg.textContent = "❌ " + data.message;
     msg.style.color = "red";
   }
 }

@@ -60,119 +60,83 @@
 
 
 <div class="files-wrapper">
-
   <h1 class="section-title">My Files</h1>
 
-  <!-- Your Files -->
   <h2 class="sub-heading">Your Files</h2>
-  <ul class="file-list" id="your-files-list">
-    <li>Loading...</li>
-  </ul>
+  <ul class="file-list" id="your-files-list"><li>Loading...</li></ul>
 
-  <!-- Shared Files -->
   <h2 class="sub-heading">Shared Files</h2>
-  <ul class="file-list" id="shared-files-list">
-    <li>Loading...</li>
-  </ul>
+  <ul class="file-list" id="shared-files-list"><li>Loading...</li></ul>
 
-  <!-- Folders -->
   <h2 class="sub-heading">Folders</h2>
   <ul class="folder-list">
-    <li class="folder-item">
-      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
-      <span class="folder-name">DropVault drafts</span>
-    </li>
-
-    <li class="folder-item">
-      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
-      <span class="folder-name">Presentations</span>
-    </li>
-
-    <li class="folder-item">
-      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
-      <span class="folder-name">Archived Documents</span>
-    </li>
+      <li class="folder-item"><span class="folder-name">DropVault drafts</span></li>
+      <li class="folder-item"><span class="folder-name">Presentations</span></li>
+      <li class="folder-item"><span class="folder-name">Archived Documents</span></li>
   </ul>
-
 </div>
 
-
 <script type="module">
-
 import { API_BASE } from "/static/js/api.js";
 
-// ICON URL
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
-// Load Your Files + Shared Files
 async function loadMyFiles() {
     const token = localStorage.getItem("token");
-    if (!token) return window.location.href = "/login";
+    if (!token) return (window.location.href = "/login");
 
     const yourList = document.getElementById("your-files-list");
     const sharedList = document.getElementById("shared-files-list");
 
-    yourList.innerHTML = "<li>Loading...</li>";
-    sharedList.innerHTML = "<li>Loading...</li>";
-
     try {
-        const res = await fetch(`${API_BASE}/files/all/`, {
+        const res = await fetch(`${API_BASE}/files/list/`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         const data = await res.json();
+        console.log("MY FILES RESPONSE:", data);
 
-        if (!res.ok) {
-            yourList.innerHTML = "<li>Error loading files.</li>";
-            sharedList.innerHTML = "<li>Error loading files.</li>";
-            return;
-        }
-
-        /* ---------------- YOUR FILES ---------------- */
         yourList.innerHTML = "";
+        data.files.forEach(f => {
+            yourList.innerHTML += `
+                <li class="file-item">
+                    <img class="file-icon" src="${FILE_ICON}">
+                    <span class="file-name">${f.filename}</span>
+                    <button onclick="downloadFile('${f.id}')">⬇️</button>
+                    <button onclick="shareFile('${f.id}')">🔗</button>
+                    <button onclick="deleteFile('${f.id}')">🗑</button>
+                </li>
+            `;
+        });
 
-        if (data.your_files.length === 0) {
-            yourList.innerHTML = "<li>No files uploaded.</li>";
-        } else {
-            data.your_files.forEach(f => {
-                yourList.innerHTML += `
-                    <li class="file-item" onclick="openFile('${API_BASE}${f.url}')">
-                      <img class="file-icon" src="${FILE_ICON}">
-                      <span class="file-name">${f.filename}</span>
-                    </li>
-                `;
-            });
-        }
-
-        /* ---------------- SHARED FILES ---------------- */
-        sharedList.innerHTML = "";
-
-        if (data.shared_files.length === 0) {
-            sharedList.innerHTML = "<li>No shared files.</li>";
-        } else {
-            data.shared_files.forEach(f => {
-                sharedList.innerHTML += `
-                    <li class="file-item" onclick="openFile('${API_BASE}${f.share_url}')">
-                      <img class="file-icon" src="${FILE_ICON}">
-                      <span class="file-name">${f.filename}</span>
-                    </li>
-                `;
-            });
-        }
-
-    } catch (error) {
-        console.log(error);
-        yourList.innerHTML = "<li>Error loading files.</li>";
-        sharedList.innerHTML = "<li>Error loading files.</li>";
+    } catch (err) {
+        yourList.innerHTML = "<li>⚠ Error fetching files</li>";
     }
 }
 
-window.openFile = function(url) {
-    window.open(url, "_blank");
+window.downloadFile = (id) => window.open(`${API_BASE}/files/download/${id}/`);
+window.shareFile = async (id) => {
+  const token = localStorage.getItem("token");
+  const r = await fetch(`${API_BASE}/files/share/`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ file_id: id })
+  });
+  const d = await r.json();
+  alert("Share Link: " + API_BASE + d.share_url);
+};
+window.deleteFile = async (id) => {
+  if (!confirm("Delete this file?")) return;
+  const token = localStorage.getItem("token");
+  await fetch(`${API_BASE}/files/delete/${id}/`, {
+     method: "DELETE",
+     headers: { "Authorization": `Bearer ${token}` }
+  });
+  loadMyFiles();
 };
 
 loadMyFiles();
-
 </script>
 
 {% endblock %}
+

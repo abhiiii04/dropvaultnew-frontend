@@ -8,39 +8,50 @@
 <body class="auth">
   <div class="auth-container">
     <h2>Login to DropVault</h2>
-    <form method="POST">
-      <input type="email" name="email" placeholder="Email" required>
-      <input type="password" name="password" placeholder="Password" required>
+
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
       <button type="submit">Login</button>
     </form>
 
-  <div class="auth-divider">or</div>
+    <div class="auth-divider">or</div>
 
-    <!-- GOOGLE LOGIN BUTTON (TEXT ONLY) -->
-    <a href="/google-login" class="google-btn">
-       Continue with Google
+    <!-- GOOGLE LOGIN (text-only button) -->
+    <a href="https://dropvault-2.onrender.com/google-login" class="google-btn">
+      Continue with Google
     </a>
 
     <p>Don’t have an account? <a href="/register">Sign up</a></p>
   </div>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<div id="g_id_onload"
-     data-client_id="111787939348-abcnn6fk3bt6i5sshc93pv13g6vgjjub.apps.googleusercontent.com"
-     data-context="signin"
-     data-ux_mode="redirect"
-     data-login_uri="http://127.0.0.1:5000/google-callback"
-     data-auto_prompt="false">
-</div>
+<script>
+const API_BASE = "https://dropvault-2.onrender.com"; // ✅ your backend link
 
-<div class="g_id_signin"
-     data-type="standard"
-     data-shape="rectangular"
-     data-theme="outline"
-     data-text="sign_in_with"
-     data-size="large"
-     data-logo_alignment="left">
-</div>
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch(`${API_BASE}/accounts/api/login/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+  console.log("LOGIN RESPONSE:", data);
+
+  if (res.ok && data.token) {
+    localStorage.setItem("token", data.token); // store JWT
+    alert("🎉 Login Successful");
+    window.location.href = "/dashboard"; // redirect
+  } else {
+    alert(data.message || "❌ Login failed. Try again.");
+  }
+});
+</script>
 
 </body>
 </html>

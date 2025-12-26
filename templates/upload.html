@@ -1,18 +1,31 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="upload-container">
-  <h1>Upload Files</h1>
-  <p>Securely upload your files to DropVault and generate an expiring share link.</p>
+<form id="uploadForm" enctype="multipart/form-data">
+  <input type="file" id="file" required>
+  <button type="submit" class="btn-upload">Upload</button>
+</form>
 
-  <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" class="upload-form">
-    <label for="file">Select File</label>
-    <input type="file" name="file" id="file" required>
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
 
-    <button type="submit" class="btn-upload">Upload</button>
-  </form>
+document.getElementById("uploadForm").addEventListener("submit", async(e)=>{
+ e.preventDefault();
 
-  {% if message %}
-  <p class="success-msg">{{ message }}</p>
-  {% endif %}
-</div>
-{% endblock %}
+ const token = localStorage.getItem("token");
+ const file = document.getElementById("file").files[0];
+
+ const form = new FormData();
+ form.append("file", file);
+
+ const res = await fetch(`${API_BASE}/files/upload/`,{
+    method:"POST",
+    headers:{ "Authorization":`Bearer ${token}` },
+    body:form
+ });
+
+ if(res.ok){
+   alert("✅ File Uploaded");
+   location.href="/myfiles";
+ } else {
+   alert("❌ Upload Failed");
+ }
+});
+</script>

@@ -127,116 +127,39 @@
 </style>
 
 
-<div class="shared-wrapper">
-
-  <h1 class="shared-title">Shared files</h1>
-  <p class="shared-subtitle">Manage your shared files</p>
-
-  <div class="breadcrumb">Shared / Manage</div>
-
-  <!-- Tabs -->
-  <div class="shared-tabs">
-    <div class="shared-tab active">Members</div>
-    <div class="shared-tab">Links</div>
-    <div class="shared-tab">Recents</div>
-    <div class="shared-tab">Settings</div>
-  </div>
-
-  <!-- Search -->
-  <div class="search-box">
-    <input type="text" id="search-input" placeholder="🔍 Search shared files..." onkeyup="filterShared()">
-  </div>
-
-  <!-- Shared Files Table -->
-  <table class="shared-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Date</th>
-        <th>Status</th>
-        <th>Time Limit</th>
-      </tr>
-    </thead>
-
-    <tbody id="shared-list">
-      <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-    </tbody>
-  </table>
-
-</div>
-
-
 <script type="module">
-
 import { API_BASE } from "/static/js/api.js";
 
-// Load shared files from backend API
 async function loadSharedFiles() {
     const token = localStorage.getItem("token");
-    if (!token) return window.location.href = "/login";
+    if(!token) return location.href = "/login";
 
-    const table = document.getElementById("shared-list");
+    const list = document.getElementById("shared-list");
 
-    try {
-        const res = await fetch(`${API_BASE}/files/shared/`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+    const res = await fetch(`${API_BASE}/files/shared/`, {
+        headers:{ "Authorization":`Bearer ${token}` }
+    });
 
-        const data = await res.json();
+    const data = await res.json();
+    list.innerHTML = "";
 
-        if (!res.ok || !data.shared || data.shared.length === 0) {
-            table.innerHTML = `<tr><td colspan="4" style="text-align:center;">No shared files found.</td></tr>`;
-            return;
-        }
-
-        table.innerHTML = "";
-
-        data.shared.forEach((f, index) => {
-
-            let expiryDate = new Date(f.expiry);
-            let now = new Date();
-            let diffHours = (expiryDate - now) / (1000 * 60 * 60);
-
-            let statusBadge = `
-                <span class="badge badge-active">Active</span>
-            `;
-            if (diffHours < 24) {
-                statusBadge = `<span class="badge badge-expiring">Expiring soon…</span>`;
-            }
-
-            table.innerHTML += `
-                <tr class="shared-row">
-                    <td>${f.filename}</td>
-                    <td>${expiryDate.toLocaleDateString()}</td>
-                    <td>${statusBadge}</td>
-                    <td><span class="modify-link" onclick="modifyShare('${f.id}')">Modify</span></td>
-                </tr>
-            `;
-        });
-
-    } catch (error) {
-        console.log(error);
-        table.innerHTML = `<tr><td colspan="4" style="text-align:center;">⚠ Error loading shared files.</td></tr>`;
-    }
+    data.shared.forEach(s=>{
+        let exp = new Date(s.expiry).toLocaleString();
+        list.innerHTML += `
+          <tr class="shared-row">
+            <td>${s.filename}</td>
+            <td>${exp}</td>
+            <td><span class="badge">${ new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
+            <td><span class="modify-link" onclick="copyLink('${API_BASE}${s.share_url}')">Copy</span></td>
+          </tr>
+        `;
+    });
 }
 
-window.modifyShare = function(id) {
-    alert("Modify window coming soon… (Backend needed)");
-};
-
-// Search filter
-window.filterShared = function() {
-    const filter = document.getElementById("search-input").value.toLowerCase();
-    const rows = document.getElementsByClassName("shared-row");
-
-    Array.from(rows).forEach(row => {
-        const name = row.children[0].innerText.toLowerCase();
-        row.style.display = name.includes(filter) ? "" : "none";
-    });
+window.copyLink = (url)=>{
+    navigator.clipboard.writeText(url);
+    alert("🔗 Link Copied!");
 };
 
 loadSharedFiles();
-
 </script>
-
-{% endblock %}
