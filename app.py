@@ -50,9 +50,17 @@ def init_db():
 init_db()
 
 # --------------------------------
+# LANDING PAGE (Public before login)
+# --------------------------------
+@app.route("/")
+def landing():
+    return render_template("landing.html")
+
+
+# --------------------------------
 # AUTH ROUTES
 # --------------------------------
-@app.route("/", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"]
@@ -361,10 +369,77 @@ def toggle_2fa():
     flash(f"Two-Factor Authentication {status}", "success")
     return redirect(url_for("settings"))
 
+@app.route("/google-login")
+def google_login():
+    # Redirect to Google OAuth URL
+    GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
+
+    client_id = "111787939348-abcnn6fk3bt6i5sshc93pv13g6vgjjub.apps.googleusercontent.com"
+    redirect_uri = "http://127.0.0.1:5000/google-callback"
+
+    scope = "email profile"
+
+    auth_url = (
+        f"{GOOGLE_AUTH_URL}?response_type=code"
+        f"&client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={scope}"
+    )
+
+    return redirect(auth_url)
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as grequests
+
+@app.route("/google-callback")
+def google_callback():
+    token = request.args.get("credential") or request.args.get("code")
+    if not token:
+        return "Google login failed ❌", 400
+
+    try:
+        # Verify Google token
+        idinfo = id_token.verify_oauth2_token(
+            token,
+            grequests.Request(),
+            "YOUR_GOOGLE_CLIENT_ID"
+        )
+
+        email = idinfo.get("email")
+        name = idinfo.get("name")
+
+        # Auto-register user if not existing
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT id FROM users WHERE email=?", (email,))
+        user = c.fetchone()
+
+        if not user:
+            c.execute(
+                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+                (name, email, "google_oauth")
+            )
+            conn.commit()
+            user_id = c.lastrowid
+        else:
+            user_id = user[0]
+
+        conn.close()
+
+        # Login user
+        session["user_id"] = user_id
+        session["user_name"] = name
+
+        return redirect(url_for("dashboard"))
+
+    except ValueError:
+        return "Invalid token ❌", 400
 
 
 # --------------------------------
 # APP RUNNER
 # --------------------------------
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=10000)
+

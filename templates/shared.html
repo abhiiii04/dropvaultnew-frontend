@@ -1,28 +1,173 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="shared-container">
-  <h1>Shared Files</h1>
-  <p>Manage your shared links, check expiry, and copy links easily.</p>
+<style>
+/* Page Layout */
+.shared-wrapper {
+  max-width: 900px;
+  margin: 2px auto;
+  padding: 60px 80px;
+}
 
+/* Title */
+.shared-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.shared-subtitle {
+  color: #7b7b7b;
+  margin-bottom: 20px;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  color: #8a88c0;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+/* Tabs */
+.shared-tabs {
+  display: flex;
+  gap: 25px;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 10px;
+}
+
+.shared-tab {
+  font-size: 15px;
+  padding-bottom: 6px;
+  cursor: pointer;
+  color: #7b7b7b;
+}
+
+.shared-tab.active {
+  color: #4a4ac7;
+  border-bottom: 2px solid #4a4ac7;
+  font-weight: 600;
+}
+
+/* Search Bar */
+.search-box {
+  background: #f2f2f8;
+  border-radius: 10px;
+  padding: 12px 15px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+}
+
+.search-box input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+}
+
+/* Table */
+.shared-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 15px;
+}
+
+.shared-table thead {
+  background: #fafafa;
+}
+
+.shared-table th, 
+.shared-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.shared-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
+.badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: #b8ffcc;
+  color: #0e8c3a;
+}
+
+.badge-expiring {
+  background: #fff1a6;
+  color: #8c6f00;
+}
+
+/* "Modify" link */
+.modify-link {
+  color: #4a4ac7;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Copy button hidden for new UI (modern look uses click-to-copy) */
+.copy-btn {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+</style>
+
+
+<div class="shared-wrapper">
+
+  <h1 class="shared-title">Shared files</h1>
+  <p class="shared-subtitle">Manage your shared files</p>
+
+  <div class="breadcrumb">Shared / Manage</div>
+
+  <!-- Tabs -->
+  <div class="shared-tabs">
+    <div class="shared-tab active">Members</div>
+    <div class="shared-tab">Links</div>
+    <div class="shared-tab">Recents</div>
+    <div class="shared-tab">Settings</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="🔍 Search shared files..." onkeyup="filterShared()">
+  </div>
+
+  <!-- Shared Files Table -->
   <table class="shared-table">
     <thead>
       <tr>
-        <th>File Name</th>
-        <th>Share Link</th>
-        <th>Expiry</th>
-        <th>QR Code</th>
-        <th>Actions</th>
+        <th>Name</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Time Limit</th>
       </tr>
     </thead>
 
     <tbody id="shared-list">
-      <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+      <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
     </tbody>
   </table>
+
 </div>
 
+
 <script type="module">
+
 import { API_BASE } from "/static/js/api.js";
 
 // Load shared files from backend API
@@ -40,69 +185,58 @@ async function loadSharedFiles() {
         const data = await res.json();
 
         if (!res.ok || !data.shared || data.shared.length === 0) {
-            table.innerHTML = `<tr><td colspan="5" style="text-align:center;">No shared files found.</td></tr>`;
+            table.innerHTML = `<tr><td colspan="4" style="text-align:center;">No shared files found.</td></tr>`;
             return;
         }
 
-        table.innerHTML = ""; // Clear loader
+        table.innerHTML = "";
 
         data.shared.forEach((f, index) => {
+
+            let expiryDate = new Date(f.expiry);
+            let now = new Date();
+            let diffHours = (expiryDate - now) / (1000 * 60 * 60);
+
+            let statusBadge = `
+                <span class="badge badge-active">Active</span>
+            `;
+            if (diffHours < 24) {
+                statusBadge = `<span class="badge badge-expiring">Expiring soon…</span>`;
+            }
+
             table.innerHTML += `
-                <tr>
+                <tr class="shared-row">
                     <td>${f.filename}</td>
-
-                    <td>
-                      <input type="text" id="link${index}" value="${API_BASE}${f.share_url}" readonly>
-                      <button onclick="copyLink('link${index}')">Copy</button>
-                    </td>
-
-                    <td>${f.expiry ? new Date(f.expiry).toLocaleString() : "No expiry"}</td>
-
-                    <td>
-                      <img src="${API_BASE}${f.qr_code}" class="qr-small" alt="QR Code">
-                    </td>
-
-                    <td>
-                      <button class="delete-btn" onclick="deleteShared(${f.id})">Delete</button>
-                    </td>
+                    <td>${expiryDate.toLocaleDateString()}</td>
+                    <td>${statusBadge}</td>
+                    <td><span class="modify-link" onclick="modifyShare('${f.id}')">Modify</span></td>
                 </tr>
             `;
         });
 
     } catch (error) {
-        table.innerHTML = `<tr><td colspan="5" style="text-align:center;">⚠ Error loading shared files.</td></tr>`;
+        console.log(error);
+        table.innerHTML = `<tr><td colspan="4" style="text-align:center;">⚠ Error loading shared files.</td></tr>`;
     }
 }
 
-// Copy share link
-window.copyLink = function (id) {
-    const input = document.getElementById(id);
-    input.select();
-    input.setSelectionRange(0, 99999);
-    document.execCommand("copy");
-    alert("🔗 Link copied!");
+window.modifyShare = function(id) {
+    alert("Modify window coming soon… (Backend needed)");
 };
 
-// Delete share link
-window.deleteShared = async function (fileId) {
-    if (!confirm("Are you sure you want to delete this shared link?")) return;
+// Search filter
+window.filterShared = function() {
+    const filter = document.getElementById("search-input").value.toLowerCase();
+    const rows = document.getElementsByClassName("shared-row");
 
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`${API_BASE}/files/share/delete/${fileId}/`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+    Array.from(rows).forEach(row => {
+        const name = row.children[0].innerText.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
     });
-
-    if (res.ok) {
-        alert("🗑 Deleted!");
-        loadSharedFiles();
-    } else {
-        alert("❌ Delete failed.");
-    }
 };
 
-loadSharedFiles(); // Auto-load on page open
+loadSharedFiles();
+
 </script>
 
 {% endblock %}

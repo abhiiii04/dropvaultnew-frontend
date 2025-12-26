@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DropVault - Secure Cloud Storage</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="logo-icon">🔒</span>
+      <span class="logo-text">DropVault</span>
+    </div>
+
+    <div class="nav-right">
+      <a href="/login" class="btn-login">Login</a>
+      <a href="/register" class="btn-signup">Sign Up</a>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <h1>Secure File Storage in the Cloud</h1>
+    <p class="hero-sub">
+      Store, share, and manage your files securely with military-grade encryption.<br>
+      Access your files from anywhere, anytime.
+    </p>
+
+    <div class="hero-buttons">
+      <a href="/register" class="btn-primary">Get Started Free</a>
+      <a href="#" class="btn-outline">Learn More</a>
+    </div>
+  </section>
+
+  <!-- FEATURES SECTION -->
+  <section class="features">
+
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <h3>End-to-End Encryption</h3>
+      <p>Your files are encrypted before leaving your device. Only you have the keys.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <h3>Access Anywhere</h3>
+      <p>View your files from any device, anywhere in the world with internet connection.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Easy Sharing</h3>
+      <p>Share files securely with time-limited links and download restrictions.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🗑</div>
+      <h3>Trash & Recovery</h3>
+      <p>Recover deleted files from trash within 30 days. Never lose anything important.</p>
+    </div>
+
+  </section>
+
+</body>
+</html>

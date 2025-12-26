@@ -1,27 +1,178 @@
-import { API_BASE, authHeader } from "/static/js/api.js";
+{% extends 'base.html' %}
+{% block content %}
 
-async function loadFiles() {
-  const res = await fetch(`${API_BASE}/files/list/`, {
-    headers: authHeader()
-  });
-
-  const data = await res.json();
-
-  const grid = document.getElementById("files-grid");
-  grid.innerHTML = "";
-
-  data.files.forEach(f => {
-    grid.innerHTML += `
-      <div class="file-card">
-        <div class="file-info">
-          <h3>${f.filename}</h3>
-        </div>
-        <div class="file-actions">
-          <a href="${API_BASE}${f.download_url}" target="_blank">Download</a>
-        </div>
-      </div>
-    `;
-  });
+<style>
+/* Page Layout */
+.files-wrapper {
+  max-width: 750px;
+  margin: 40px auto;
+  padding: 10px 20px;
 }
 
-loadFiles();
+/* Section Title */
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
+
+/* Subtitles (Your Files, Shared Files, Folders) */
+.sub-heading {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 25px 0 15px 0;
+}
+
+/* List Layout */
+.file-list, .folder-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 25px 0;
+}
+
+.file-item, .folder-item {
+  display: flex;
+  align-items: center;
+  background: #f3f3f8;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.file-item:hover, .folder-item:hover {
+  background: #eaeaf5;
+}
+
+/* Icons */
+.file-icon, .folder-icon {
+  width: 28px;
+  margin-right: 14px;
+}
+
+/* Text */
+.file-name, .folder-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+</style>
+
+
+<div class="files-wrapper">
+
+  <h1 class="section-title">My Files</h1>
+
+  <!-- Your Files -->
+  <h2 class="sub-heading">Your Files</h2>
+  <ul class="file-list" id="your-files-list">
+    <li>Loading...</li>
+  </ul>
+
+  <!-- Shared Files -->
+  <h2 class="sub-heading">Shared Files</h2>
+  <ul class="file-list" id="shared-files-list">
+    <li>Loading...</li>
+  </ul>
+
+  <!-- Folders -->
+  <h2 class="sub-heading">Folders</h2>
+  <ul class="folder-list">
+    <li class="folder-item">
+      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
+      <span class="folder-name">DropVault drafts</span>
+    </li>
+
+    <li class="folder-item">
+      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
+      <span class="folder-name">Presentations</span>
+    </li>
+
+    <li class="folder-item">
+      <img class="folder-icon" src="https://cdn-icons-png.flaticon.com/512/716/716784.png">
+      <span class="folder-name">Archived Documents</span>
+    </li>
+  </ul>
+
+</div>
+
+
+<script type="module">
+
+import { API_BASE } from "/static/js/api.js";
+
+// ICON URL
+const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+
+// Load Your Files + Shared Files
+async function loadMyFiles() {
+    const token = localStorage.getItem("token");
+    if (!token) return window.location.href = "/login";
+
+    const yourList = document.getElementById("your-files-list");
+    const sharedList = document.getElementById("shared-files-list");
+
+    yourList.innerHTML = "<li>Loading...</li>";
+    sharedList.innerHTML = "<li>Loading...</li>";
+
+    try {
+        const res = await fetch(`${API_BASE}/files/all/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            yourList.innerHTML = "<li>Error loading files.</li>";
+            sharedList.innerHTML = "<li>Error loading files.</li>";
+            return;
+        }
+
+        /* ---------------- YOUR FILES ---------------- */
+        yourList.innerHTML = "";
+
+        if (data.your_files.length === 0) {
+            yourList.innerHTML = "<li>No files uploaded.</li>";
+        } else {
+            data.your_files.forEach(f => {
+                yourList.innerHTML += `
+                    <li class="file-item" onclick="openFile('${API_BASE}${f.url}')">
+                      <img class="file-icon" src="${FILE_ICON}">
+                      <span class="file-name">${f.filename}</span>
+                    </li>
+                `;
+            });
+        }
+
+        /* ---------------- SHARED FILES ---------------- */
+        sharedList.innerHTML = "";
+
+        if (data.shared_files.length === 0) {
+            sharedList.innerHTML = "<li>No shared files.</li>";
+        } else {
+            data.shared_files.forEach(f => {
+                sharedList.innerHTML += `
+                    <li class="file-item" onclick="openFile('${API_BASE}${f.share_url}')">
+                      <img class="file-icon" src="${FILE_ICON}">
+                      <span class="file-name">${f.filename}</span>
+                    </li>
+                `;
+            });
+        }
+
+    } catch (error) {
+        console.log(error);
+        yourList.innerHTML = "<li>Error loading files.</li>";
+        sharedList.innerHTML = "<li>Error loading files.</li>";
+    }
+}
+
+window.openFile = function(url) {
+    window.open(url, "_blank");
+};
+
+loadMyFiles();
+
+</script>
+
+{% endblock %}
