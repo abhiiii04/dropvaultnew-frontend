@@ -207,10 +207,13 @@ def shared_download(token):
 # --------------------------------
 # DEPLOY
 # --------------------------------
-from waitress import serve
-import os
-
+# --------------------------------
+# RUN APP FOR RENDER DEPLOYMENT
+# --------------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render gives PORT automatically
+    from waitress import serve
+    import os
+
+    port = int(os.environ.get("PORT", 5000))  # Render gives a dynamic port
     serve(app, host="0.0.0.0", port=port)
 
