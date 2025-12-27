@@ -1,37 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login - DropVault</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="auth">
-  <div class="auth-container">
-    <h2>Login to DropVault</h2>
-
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Password" required>
-      <button type="submit">Login</button>
-    </form>
-
-    <div class="auth-divider">or</div>
-
-    <a href="https://dropvault-2.onrender.com/google-login" class="google-btn">
-      Continue with Google
-    </a>
-
-    <p>Don’t have an account? <a href="/register">Sign up</a></p>
-  </div>
-
 <script>
-const API_BASE = "https://dropvault-2.onrender.com"; // Backend base URL
+const API_BASE = "https://dropvault-2.onrender.com"; // Django backend
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
   const res = await fetch(`${API_BASE}/api/login/`, {
     method: "POST",
@@ -40,20 +14,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   });
 
   const data = await res.json();
-  console.log("LOGIN RESPONSE:", data);
 
-  // ⭐ SUCCESS CASE
   if (res.ok && data.token) {
-    localStorage.setItem("token", data.token);
-    alert("Login Successful!");
-    window.location.href = "/dashboard"; // move to dashboard
-  }
-  // ❌ FAILURE CASE
-  else {
-    alert(data.message || "❌ Invalid email or password.");
+    localStorage.setItem("authToken", data.token);
+    alert("🎉 Login Successful");
+    window.location.href = "/dashboard";  // This exists because Flask serves it
+  } else {
+    alert(data.error || "❌ Login failed");
   }
 });
 </script>
-
-</body>
-</html>
