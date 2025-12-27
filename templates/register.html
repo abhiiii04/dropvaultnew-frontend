@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Register - DropVault</title>
-  <link rel="stylesheet" href="/static/css/style.css"> <!-- Updated for Render -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="auth">
-
   <div class="auth-container">
     <h2>Create an Account</h2>
 
@@ -21,10 +20,8 @@
   </div>
 
 <script>
-/* 🔗 Backend API base (Django REST on Render) */
-const API_BASE = "https://dropvault-2.onrender.com";
+const API_BASE = "https://dropvault-2.onrender.com"; // Django API
 
-/* 🚀 Register Request */
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -33,7 +30,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   const password = document.getElementById("password").value;
 
   try {
-    const res = await fetch(`${API_BASE}/api/signup/`, {   // ⬅️ updated endpoint
+    const res = await fetch(`${API_BASE}/api/signup/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password })
@@ -44,14 +41,13 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
 
     if (res.ok) {
       alert("🎉 Registration successful! Please login.");
-      window.location.href = "/login"; // ⬅️ redirect to login
+      window.location.href = "/login";
     } else {
-      alert(data.error || data.message || "❌ Email already registered.");
+      alert(data.message || "❌ Email already exists.");
     }
 
   } catch (error) {
     alert("⚠️ Server unavailable, try again later.");
-    console.error("REGISTER ERROR:", error);
   }
 });
 </script>
