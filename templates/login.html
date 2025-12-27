@@ -17,7 +17,6 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- GOOGLE LOGIN (text-only button) -->
     <a href="https://dropvault-2.onrender.com/google-login" class="google-btn">
       Continue with Google
     </a>
@@ -26,13 +25,13 @@
   </div>
 
 <script>
-const API_BASE = "https://dropvault-2.onrender.com"; // ✅ your backend link
+const API_BASE = "https://dropvault-2.onrender.com"; // Backend base URL
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
   const res = await fetch(`${API_BASE}/api/login/`, {
     method: "POST",
@@ -43,12 +42,15 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const data = await res.json();
   console.log("LOGIN RESPONSE:", data);
 
+  // ⭐ SUCCESS CASE
   if (res.ok && data.token) {
-    localStorage.setItem("token", data.token); // store JWT
-    alert("Login Successful");
-    window.location.href = "https://dropvaultnew-frontend.onrender.com"; // redirect
-  } else {
-    alert(data.message || "❌ Login failed. Try again.");
+    localStorage.setItem("token", data.token);
+    alert("Login Successful!");
+    window.location.href = "/dashboard"; // move to dashboard
+  }
+  // ❌ FAILURE CASE
+  else {
+    alert(data.message || "❌ Invalid email or password.");
   }
 });
 </script>
