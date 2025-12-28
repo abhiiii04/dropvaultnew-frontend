@@ -3,38 +3,29 @@
   <button type="submit" class="btn-upload">Upload</button>
 </form>
 
-<script>
-const API_BASE = "https://dropvault-2.onrender.com"; // Backend URL
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
 
-document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+document.getElementById("uploadForm").addEventListener("submit", async(e)=>{
+ e.preventDefault();
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("❌ Session expired. Please login again.");
-    return location.href = "/login";
-  }
+ const token = localStorage.getItem("token");
+ const file = document.getElementById("file").files[0];
 
-  const file = document.getElementById("file").files[0];
-  if (!file) return alert("⚠️ Please select a file.");
+ const form = new FormData();
+ form.append("file", file);
 
-  const form = new FormData();
-  form.append("file", file);
+ const res = await fetch(`${API_BASE}/files/upload/`,{
+    method:"POST",
+    headers:{ "Authorization":`Bearer ${token}` },
+    body:form
+ });
 
-  const res = await fetch(`${API_BASE}/api/upload/`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}` // 🔑 correct token format
-    },
-    body: form
-  });
-
-  if (res.ok) {
-    alert("📁 File Uploaded Successfully!");
-    window.location.href = "/myfiles"; // redirect after upload
-  } else {
-    const errorText = await res.text();
-    alert("❌ Upload Failed: " + errorText);
-  }
+ if(res.ok){
+   alert("✅ File Uploaded");
+   location.href="/myfiles";
+ } else {
+   alert("❌ Upload Failed");
+ }
 });
 </script>
