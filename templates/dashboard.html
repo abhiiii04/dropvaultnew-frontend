@@ -48,14 +48,28 @@ const API_BASE = "https://dropvault-2.onrender.com"; // backend URL
 
 async function loadDashboard(){
   const token = localStorage.getItem("token");
-  if (!token) return window.location.href = "/login";  // Not logged in → redirect
+  let res;
 
-  const res = await fetch(`${API_BASE}/dashboard/`, {
-    method: "GET",
-    headers: { "Authorization": `Bearer ${token}` }
-  });
+  if (token) {
+    // Prefer token-based auth when available
+    res = await fetch(`${API_BASE}/dashboard/`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+  } else {
+    // Try session-cookie based auth (server-set session cookie)
+    try {
+      res = await fetch(`${API_BASE}/dashboard/`, {
+        method: "GET",
+        credentials: 'include'
+      });
+    } catch (e) {
+      console.error('Session fetch failed:', e);
+      return location.href = "/login";
+    }
+  }
 
-  if(!res.ok){
+  if (!res || !res.ok) {
     alert("⚠️ Session expired. Login again.");
     return location.href = "/login";
   }
