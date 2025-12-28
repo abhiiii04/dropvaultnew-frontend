@@ -43,10 +43,14 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const data = await res.json();
 
   if (res.ok && data.token) {
-    localStorage.setItem("token", data.token);
-    window.location.href = "/dashboard";
-  } else {
-    alert(data.message || "❌ Login failed");
+    localStorage.setItem("token", data.token); // store JWT
+    alert("🎉 Login Successful");
+
+    // 🚀 Redirect correctly to dashboard
+    window.location.href = "https://dropvaultnew-frontend.onrender.com/dashboard";
+  } 
+  else {
+    alert(data.message || "❌ Login failed. Try again.");
   }
 });
 </script>
