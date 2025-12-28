@@ -26,7 +26,12 @@ def register_page():
 
 @app.route("/dashboard")
 def dashboard_page():
-    return render_template("dashboard.html")
+    try:
+        return render_template("dashboard.html")
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        return f"<h2>Template render error</h2><pre>{tb}</pre>", 500
 
 
 @app.route("/__debug_dashboard")
