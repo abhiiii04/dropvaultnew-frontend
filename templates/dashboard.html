@@ -1,95 +1,149 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="main">
-  <h1>Welcome to DropVault</h1>
-  <p>Secure. Simple. Yours.</p>
+<!DOCTYPE html>
+<html lang="en">
 
-  <div class="dashboard-cards">
-    <div class="card">
-      <h3>Storage Used</h3>
-      <p id="storageText"><strong>0 GB</strong> / 0 GB used</p>
-      <div class="progress-container">
-        <div class="progress-bar" id="storageBar" style="width: 0%;"></div>
-      </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - DropVault</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            margin: 0 0 30px 0;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .footer-links {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-box">
+        <h1>Sign In</h1>
+
+
+
+        <form method="POST" action="/accounts/login/">
+            <input type="hidden" name="csrfmiddlewaretoken" value="EoM06uUhTkMQzT56cevuUULxVHBV4TDPJW2JvEzTFRf7lg3DgPWeuMFNeU2Y8zSW">
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    value=""
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                >
+            </div>
+
+            <button type="submit">Sign In</button>
+        </form>
+
+        <div class="footer-links">
+            <p>Don't have an account? <a href="/accounts/signup/">Sign Up</a></p>
+        </div>
     </div>
+</body>
 
-    <div class="card">
-      <h3>Recent Uploads</h3>
-      <ul id="recentUploads"><li>Loading...</li></ul>
-    </div>
-
-    <div class="card">
-      <h3>Shared Files</h3>
-      <p id="sharedCount">0 shared this week</p>
-    </div>
-  </div>
-
-  <div class="table-section">
-    <h2>Your Files</h2>
-    <table class="dashboard-table">
-      <thead>
-        <tr>
-          <th>Filename</th>
-          <th>Expires</th>
-          <th>Link</th>
-          <th>Download</th>
-          <th>QR</th>
-        </tr>
-      </thead>
-      <tbody id="fileTable">
-        <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-const API_BASE = "https://dropvault-2.onrender.com"; // backend
-
-async function loadDashboard(){
-  const token = localStorage.getItem("token");
-  if (!token) return window.location.href = "/login";
-
-  const res = await fetch(`${API_BASE}/dashboard/`, {
-    method: "GET",
-    headers: { "Authorization": token }
-  });
-
-  const data = await res.json();
-  console.log("DASHBOARD DATA:", data);
-
-  // ---- STORAGE ----
-  document.getElementById("storageText").innerHTML =
-    `<strong>${data.storage.used} GB</strong> / ${data.storage.total} GB used`;
-  document.getElementById("storageBar").style.width = `${data.storage.percent}%`;
-
-  // ---- RECENT FILES ----
-  const recentUI = document.getElementById("recentUploads");
-  recentUI.innerHTML = "";
-  data.recent_files.forEach(f => {
-    recentUI.innerHTML += `<li>${f}</li>`;
-  });
-
-  // ---- SHARED COUNT ----
-  document.getElementById("sharedCount").innerText = `${data.shared_count} shared this week`;
-
-  // ---- FILE LIST ----
-  const table = document.getElementById("fileTable");
-  table.innerHTML = "";
-  data.files.forEach(f => {
-    table.innerHTML += `
-      <tr>
-        <td>${f.filename}</td>
-        <td>${f.expiry}</td>
-        <td><a href="${f.download_url}" target="_blank">Open</a></td>
-        <td><a href="${f.download_url}" class="btn small">⬇️</a></td>
-        <td><img src="${f.qr}" class="qr-small" alt="QR"></td>
-      </tr>
-    `;
-  });
-}
-
-loadDashboard();
-</script>
-
-{% endblock %}
+</html>
