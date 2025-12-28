@@ -46,8 +46,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     localStorage.setItem("token", data.token); // store JWT
     alert("🎉 Login Successful");
 
-    // 🚀 Redirect correctly to dashboard
-    window.location.href = "/dashboard.html";
+    // 🚀 Redirect correctly to dashboard route
+    window.location.href = "/dashboard";
   } 
   else {
     alert(data.message || "❌ Login failed. Try again.");
