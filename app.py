@@ -28,6 +28,11 @@ def register_page():
 def dashboard_page():
     return render_template("dashboard.html")
 
+
+@app.route("/__debug_dashboard")
+def debug_dashboard():
+    return "OK: dashboard route reachable"
+
 @app.route("/upload")
 def upload_page():
     return render_template("upload.html")
