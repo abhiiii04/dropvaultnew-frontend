@@ -10,7 +10,7 @@
     <h2>Create an Account</h2>
 
     <form id="registerForm">
-      <input type="text" id="username" placeholder="Full Name" required>
+      <input type="text" id="username" placeholder="Name" required>
       <input type="email" id="email" placeholder="Email" required>
       <input type="password" id="password" placeholder="Password" required>
       <input type="password" id="confirm_password" placeholder="Confirm Password" required>
@@ -26,10 +26,10 @@ const API_BASE = "https://dropvault-2.onrender.com"; // Django API
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("name").value;
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  const confirm_password = document.getElementById("confirm_password").value;
+  const confirm_password = document.getElementById("password").value;
   try {
     const res = await fetch(`${API_BASE}/api/signup/`, {
       method: "POST",
