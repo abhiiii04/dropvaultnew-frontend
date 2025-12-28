@@ -15,9 +15,7 @@
 
     <div class="card">
       <h3>Recent Uploads</h3>
-      <ul id="recentUploads">
-        <li>Loading...</li>
-      </ul>
+      <ul id="recentUploads"><li>Loading...</li></ul>
     </div>
 
     <div class="card">
@@ -38,53 +36,54 @@
           <th>QR</th>
         </tr>
       </thead>
-
       <tbody id="fileTable">
         <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
       </tbody>
-
     </table>
   </div>
 </div>
 
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
+<script>
+const API_BASE = "https://dropvault-2.onrender.com"; // backend
 
 async function loadDashboard(){
   const token = localStorage.getItem("token");
-  if(!token) return location.href = "/login";
+  if (!token) return window.location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/files/list/`, {
-    headers: { "Authorization": `Bearer ${token}` }
+  const res = await fetch(`${API_BASE}/api/dashboard/`, {
+    method: "GET",
+    headers: { "Authorization": token }
   });
-  const data = await res.json();
 
-  // ----------- STORAGE -------------
+  const data = await res.json();
+  console.log("DASHBOARD DATA:", data);
+
+  // ---- STORAGE ----
   document.getElementById("storageText").innerHTML =
     `<strong>${data.storage.used} GB</strong> / ${data.storage.total} GB used`;
   document.getElementById("storageBar").style.width = `${data.storage.percent}%`;
 
-  // ----------- RECENT FILES -------------
+  // ---- RECENT FILES ----
   const recentUI = document.getElementById("recentUploads");
   recentUI.innerHTML = "";
-  data.recent.forEach(f => {
+  data.recent_files.forEach(f => {
     recentUI.innerHTML += `<li>${f}</li>`;
   });
 
-  // ----------- SHARED COUNT -------------
+  // ---- SHARED COUNT ----
   document.getElementById("sharedCount").innerText = `${data.shared_count} shared this week`;
 
-  // ----------- FILE TABLE -------------
+  // ---- FILE LIST ----
   const table = document.getElementById("fileTable");
   table.innerHTML = "";
-  data.files.forEach(f=>{
+  data.files.forEach(f => {
     table.innerHTML += `
       <tr>
         <td>${f.filename}</td>
         <td>${f.expiry}</td>
-        <td><a href="${API_BASE}${f.link}" target="_blank">Open</a></td>
-        <td><a href="${API_BASE}/files/download/${f.id}/" class="btn small">⬇️</a></td>
-        <td><img src="${API_BASE}${f.qr}" alt="QR" class="qr-small"></td>
+        <td><a href="${f.download_url}" target="_blank">Open</a></td>
+        <td><a href="${f.download_url}" class="btn small">⬇️</a></td>
+        <td><img src="${f.qr}" class="qr-small" alt="QR"></td>
       </tr>
     `;
   });
