@@ -33,24 +33,33 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+  try {
+    const res = await fetch(`${API_BASE}/api/login/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-  const res = await fetch(`${API_BASE}/api/login/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
 
-  const data = await res.json();
+    console.log('Login response:', { status: res.status, ok: res.ok, data });
 
-  if (res.ok && data.token) {
-    localStorage.setItem("token", data.token); // store JWT
-    alert("🎉 Login Successful");
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token); // store JWT
+      console.log('Token stored in localStorage');
+      alert("🎉 Login Successful");
 
-    // 🚀 Redirect correctly to dashboard route
-    window.location.href = "/dashboard";
-  } 
-  else {
+      // Use replace so back button doesn't go back to login
+      window.location.replace("/dashboard");
+      return;
+    }
+
     alert(data.message || "❌ Login failed. Try again.");
+  } catch (err) {
+    console.error('Login request failed:', err);
+    alert('Network error. See console for details.');
   }
 });
 </script>
