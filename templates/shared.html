@@ -135,22 +135,25 @@ async function loadSharedFiles() {
     if(!token) return location.href = "/login";
 
     const list = document.getElementById("shared-list");
-
     const res = await fetch(`${API_BASE}/files/shared/`, {
-        headers:{ "Authorization":`Bearer ${token}` }
+        headers:{ "Authorization":`Bearer ${token}` },
+        credentials: 'include'
     });
 
     const data = await res.json();
     list.innerHTML = "";
 
-    data.shared.forEach(s=>{
-        let exp = new Date(s.expiry).toLocaleString();
+    // Support API returning { shared: [...] } or an array directly
+    const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+
+    items.forEach(s=>{
+        let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
         list.innerHTML += `
           <tr class="shared-row">
             <td>${s.filename}</td>
             <td>${exp}</td>
-            <td><span class="badge">${ new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
-            <td><span class="modify-link" onclick="copyLink('${API_BASE}${s.share_url}')">Copy</span></td>
+            <td><span class="badge">${ s.expiry && new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
+            <td><span class="modify-link" onclick="getShare('${s.id}')">Copy</span></td>
           </tr>
         `;
     });
@@ -159,6 +162,32 @@ async function loadSharedFiles() {
 window.copyLink = (url)=>{
     navigator.clipboard.writeText(url);
     alert("🔗 Link Copied!");
+};
+
+window.getShare = async (id) => {
+  const token = localStorage.getItem('token');
+  const opts = { method: 'GET', credentials: 'include', headers: {} };
+  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/share/${id}/`, opts);
+    if (!r.ok) {
+      alert('Failed to create/get share link: ' + r.status);
+      return;
+    }
+    const j = await r.json();
+    const share = j.share_url || j.url || j.link;
+    if (!share) {
+      alert('Share URL not returned by server');
+      return;
+    }
+    const full = share.startsWith('http') ? share : (API_BASE + share);
+    navigator.clipboard.writeText(full);
+    alert('🔗 Link Copied!');
+  } catch (e) {
+    console.error('getShare error', e);
+    alert('Error creating share link');
+  }
 };
 
 loadSharedFiles();
