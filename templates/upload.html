@@ -10,10 +10,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const token = localStorage.getItem("token");
-  if (!token) {
-    alert("❌ Session expired. Please login again.");
-    return location.href = "/login";
-  }
+  // If no token, we'll attempt session-cookie based auth on the upload request
 
   const file = document.getElementById("file").files[0];
   if (!file) return alert("⚠️ Please select a file.");
@@ -21,13 +18,17 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   const form = new FormData();
   form.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/upload/`, {
+  const fetchOptions = {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}` // 🔑 correct token format
-    },
-    body: form
-  });
+    body: form,
+    credentials: 'include' // include session cookie if backend uses session auth
+  };
+
+  if (token) {
+    fetchOptions.headers = { "Authorization": `Bearer ${token}` };
+  }
+
+  const res = await fetch(`${API_BASE}/api/upload/`, fetchOptions);
 
   if (res.ok) {
     alert("📁 File Uploaded Successfully!");
