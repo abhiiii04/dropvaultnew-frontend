@@ -116,11 +116,14 @@ async function loadMyFiles() {
 
       yourList.innerHTML = "";
       files.forEach(f => {
+        // try to use known fields for download/share
+        const slug = f.slug || f.share_slug || f.short || '';
+        const download_url = f.download_url || f.url || '';
         yourList.innerHTML += `
           <li class="file-item">
             <img class="file-icon" src="${FILE_ICON}">
             <span class="file-name">${f.filename}</span>
-            <button onclick="downloadFile('${f.id}')">⬇️</button>
+            <button onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
             <button onclick="shareFile('${f.id}')">🔗</button>
             <button onclick="deleteFile('${f.id}')">🗑</button>
           </li>
@@ -133,21 +136,27 @@ async function loadMyFiles() {
     }
 }
 
-window.downloadFile = (id) => window.open(`${API_BASE}/api/files/download/${id}/`);
+window.downloadFile = (id, slug, url) => {
+  // Prefer explicit download URL from API, then slug-based shared link, then fallback
+  if (url && url.length) return window.open(url);
+  if (slug && slug.length) return window.open(`${API_BASE}/s/${slug}/download/`);
+  // final fallback - try the generic api download endpoint
+  return window.open(`${API_BASE}/api/download/${id}/`);
+};
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
   const opts = { method: "POST", headers: { "Content-Type": "application/json" }, credentials: 'include', body: JSON.stringify({ file_id: id }) };
   if (token) opts.headers["Authorization"] = `Bearer ${token}`;
   const r = await fetch(`${API_BASE}/api/files/share/`, opts);
   const d = await r.json();
-  alert("Share Link: " + API_BASE + d.share_url);
+  alert("Share Link: " + (d.share_url ? (API_BASE + d.share_url) : (d.url || '')));
 };
 window.deleteFile = async (id) => {
   if (!confirm("Delete this file?")) return;
   const token = localStorage.getItem("token");
   const opts = { method: "DELETE", credentials: 'include', headers: {} };
   if (token) opts.headers["Authorization"] = `Bearer ${token}`;
-  await fetch(`${API_BASE}/api/files/delete/${id}/`, opts);
+  await fetch(`${API_BASE}/api/delete/${id}/`, opts);
   loadMyFiles();
 };
 
