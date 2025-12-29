@@ -89,61 +89,62 @@ async function loadMyFiles() {
     const sharedList = document.getElementById("shared-files-list");
 
     try {
-        const fetchOpts = { headers: {}, credentials: 'include' };
-        if (token) {
-          fetchOpts.headers["Authorization"] = `Bearer ${token}`;
-          // do not rely on cookies when we have a token
-          delete fetchOpts.credentials;
-        }
+      // Always include credentials so session-cookie auth works; include token header when present
+      const fetchOpts = { headers: {}, credentials: 'include' };
+      if (token) fetchOpts.headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE}/api/list/`, fetchOpts);
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch (_) { data = { raw: text } }
+      const res = await fetch(`${API_BASE}/api/list/`, fetchOpts);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch (_) { data = { raw: text } }
 
-        // If API replies that login is required, redirect to login
-        if (data && data.login_required) {
-          alert(data.message || 'Please login to continue');
-          return window.location.href = '/login';
-        }
-        console.log("MY FILES RESPONSE:", data);
+      // If API replies that login is required, redirect to login
+      if (data && data.login_required) {
+        alert(data.message || 'Please login to continue');
+        return window.location.href = '/login';
+      }
 
-        yourList.innerHTML = "";
-        data.files.forEach(f => {
-            yourList.innerHTML += `
-                <li class="file-item">
-                    <img class="file-icon" src="${FILE_ICON}">
-                    <span class="file-name">${f.filename}</span>
-                    <button onclick="downloadFile('${f.id}')">⬇️</button>
-                    <button onclick="shareFile('${f.id}')">🔗</button>
-                    <button onclick="deleteFile('${f.id}')">🗑</button>
-                </li>
-            `;
-        });
+      // If response wasn't JSON or didn't include files, show error
+      if (!data || !Array.isArray(data.files)) {
+        yourList.innerHTML = "<li>⚠ Error: unexpected response from server</li>";
+        console.error('Unexpected files response', data);
+        return;
+      }
+
+      yourList.innerHTML = "";
+      data.files.forEach(f => {
+        yourList.innerHTML += `
+          <li class="file-item">
+            <img class="file-icon" src="${FILE_ICON}">
+            <span class="file-name">${f.filename}</span>
+            <button onclick="downloadFile('${f.id}')">⬇️</button>
+            <button onclick="shareFile('${f.id}')">🔗</button>
+            <button onclick="deleteFile('${f.id}')">🗑</button>
+          </li>
+        `;
+      });
 
     } catch (err) {
-        yourList.innerHTML = "<li>⚠ Error fetching files</li>";
+      yourList.innerHTML = "<li>⚠ Error fetching files</li>";
+      console.error('loadMyFiles error', err);
     }
 }
 
-window.downloadFile = (id) => window.open(`${API_BASE}/files/download/${id}/`);
+window.downloadFile = (id) => window.open(`${API_BASE}/api/files/download/${id}/`);
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const r = await fetch(`${API_BASE}/files/share/`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ file_id: id })
-  });
+  const opts = { method: "POST", headers: { "Content-Type": "application/json" }, credentials: 'include', body: JSON.stringify({ file_id: id }) };
+  if (token) opts.headers["Authorization"] = `Bearer ${token}`;
+  const r = await fetch(`${API_BASE}/api/files/share/`, opts);
   const d = await r.json();
   alert("Share Link: " + API_BASE + d.share_url);
 };
 window.deleteFile = async (id) => {
   if (!confirm("Delete this file?")) return;
   const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/files/delete/${id}/`, {
-     method: "DELETE",
-     headers: { "Authorization": `Bearer ${token}` }
-  });
+  const opts = { method: "DELETE", credentials: 'include', headers: {} };
+  if (token) opts.headers["Authorization"] = `Bearer ${token}`;
+  await fetch(`${API_BASE}/api/files/delete/${id}/`, opts);
   loadMyFiles();
 };
 
