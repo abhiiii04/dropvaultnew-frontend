@@ -104,15 +104,18 @@ async function loadMyFiles() {
         return window.location.href = '/login';
       }
 
-      // If response wasn't JSON or didn't include files, show error
-      if (!data || !Array.isArray(data.files)) {
+      // Normalize files: API might return { files: [...] } or directly an array [...]
+      let files = [];
+      if (Array.isArray(data)) files = data;
+      else if (data && Array.isArray(data.files)) files = data.files;
+      else {
         yourList.innerHTML = "<li>⚠ Error: unexpected response from server</li>";
         console.error('Unexpected files response', data);
         return;
       }
 
       yourList.innerHTML = "";
-      data.files.forEach(f => {
+      files.forEach(f => {
         yourList.innerHTML += `
           <li class="file-item">
             <img class="file-icon" src="${FILE_ICON}">
