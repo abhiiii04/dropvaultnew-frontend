@@ -214,6 +214,20 @@ window.downloadFile = async (id, slug, url) => {
         continue;
       }
     }
+    // As a last resort, try to create a share link via the share API and open it
+    try {
+      const token = localStorage.getItem("token");
+      const opts = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: id }) };
+      if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+      const r = await fetch(`${API_BASE}/api/files/share/`, opts);
+      if (r.ok) {
+        const j = await r.json();
+        const share = j.share_url || j.url || j.download_url || j.link;
+        if (share) return window.open(share.startsWith('http') ? share : (API_BASE + share));
+      }
+    } catch (e) {
+      console.warn('share fallback failed', e);
+    }
 
     alert('Download failed: file not found on server (tried multiple endpoints).');
   } catch (err) {
