@@ -83,17 +83,29 @@ const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
 async function loadMyFiles() {
     const token = localStorage.getItem("token");
-    if (!token) return (window.location.href = "/login");
+    // Try token-based auth first; if no token, allow session-cookie auth
 
     const yourList = document.getElementById("your-files-list");
     const sharedList = document.getElementById("shared-files-list");
 
     try {
-        const res = await fetch(`${API_BASE}/files/list/`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        const fetchOpts = { headers: {}, credentials: 'include' };
+        if (token) {
+          fetchOpts.headers["Authorization"] = `Bearer ${token}`;
+          // do not rely on cookies when we have a token
+          delete fetchOpts.credentials;
+        }
 
-        const data = await res.json();
+        const res = await fetch(`${API_BASE}/api/list/`, fetchOpts);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (_) { data = { raw: text } }
+
+        // If API replies that login is required, redirect to login
+        if (data && data.login_required) {
+          alert(data.message || 'Please login to continue');
+          return window.location.href = '/login';
+        }
         console.log("MY FILES RESPONSE:", data);
 
         yourList.innerHTML = "";
