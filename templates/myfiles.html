@@ -147,25 +147,75 @@ window.downloadFile = async (id, slug, url) => {
   if (token) opts.headers['Authorization'] = `Bearer ${token}`;
 
   try {
-    const res = await fetch(`${API_BASE}/api/files/download/${id}/`, opts);
-    if (res.redirected) return window.open(res.url);
-    if (!res.ok) return alert('Download failed: ' + res.status + ' ' + res.statusText);
+    // Try multiple possible endpoints in sequence until one succeeds
+    const candidates = [];
+    if (slug) candidates.push(`${API_BASE}/s/${encodeURIComponent(slug)}/download/`);
+    candidates.push(`${API_BASE}/api/download/${id}/`);
+    candidates.push(`${API_BASE}/api/files/download/${id}/`);
+    candidates.push(`${API_BASE}/api/files/get/${id}/`);
+    candidates.push(`${API_BASE}/files/download/${id}/`);
+    candidates.push(`${API_BASE}/download/${id}/`);
 
-    // If backend returns file bytes, download as blob
-    const blob = await res.blob();
-    const disposition = res.headers.get('content-disposition') || '';
-    let filename = `file-${id}`;
-    const m = /filename="?([^";]+)"?/.exec(disposition);
-    if (m && m[1]) filename = m[1];
+    console.log('downloadFile candidates:', candidates);
 
-    const urlObj = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = urlObj;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(urlObj);
+    for (const candidate of candidates) {
+      try {
+        const r = await fetch(candidate, opts);
+        // If redirected, follow redirect in new tab/window
+        if (r.redirected) return window.open(r.url);
+
+        // If unauthorized, ask user to login
+        if (r.status === 401) {
+          alert('Unauthorized. Please login again.');
+          return window.location.href = '/login';
+        }
+
+        // Not found -> try next candidate
+        if (r.status === 404) {
+          console.warn('candidate 404', candidate);
+          continue;
+        }
+
+        if (!r.ok) {
+          // other non-OK statuses -> show message
+          const txt = await r.text();
+          console.warn('Download candidate failed:', candidate, r.status, txt);
+          continue;
+        }
+
+        // If this response is JSON (error or metadata), try to parse and continue
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const jt = await r.json();
+          // If JSON contains redirect URL, open it
+          if (jt && jt.url) return window.open(jt.url);
+          // otherwise try next
+          continue;
+        }
+
+        // Otherwise assume binary and download blob
+        const blob = await r.blob();
+        const disposition = r.headers.get('content-disposition') || '';
+        let filename = `file-${id}`;
+        const m = /filename="?([^";]+)"?/.exec(disposition);
+        if (m && m[1]) filename = m[1];
+
+        const urlObj = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = urlObj;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(urlObj);
+        return;
+      } catch (e) {
+        console.warn('Candidate fetch error', candidate, e);
+        continue;
+      }
+    }
+
+    alert('Download failed: file not found on server (tried multiple endpoints).');
   } catch (err) {
     console.error('downloadFile error', err);
     alert('Download failed; see console for details');
