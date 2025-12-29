@@ -136,12 +136,40 @@ async function loadMyFiles() {
     }
 }
 
-window.downloadFile = (id, slug, url) => {
-  // Prefer explicit download URL from API, then slug-based shared link, then fallback
+window.downloadFile = async (id, slug, url) => {
+  // Prefer explicit download URL from API, then slug-based shared link
   if (url && url.length) return window.open(url);
   if (slug && slug.length) return window.open(`${API_BASE}/s/${slug}/download/`);
-  // final fallback - try the generic api download endpoint
-  return window.open(`${API_BASE}/api/download/${id}/`);
+
+  // Fallback: try the API file-download endpoint used by the backend
+  const token = localStorage.getItem("token");
+  const opts = { method: 'GET', credentials: 'include', headers: {} };
+  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/files/download/${id}/`, opts);
+    if (res.redirected) return window.open(res.url);
+    if (!res.ok) return alert('Download failed: ' + res.status + ' ' + res.statusText);
+
+    // If backend returns file bytes, download as blob
+    const blob = await res.blob();
+    const disposition = res.headers.get('content-disposition') || '';
+    let filename = `file-${id}`;
+    const m = /filename="?([^";]+)"?/.exec(disposition);
+    if (m && m[1]) filename = m[1];
+
+    const urlObj = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlObj;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(urlObj);
+  } catch (err) {
+    console.error('downloadFile error', err);
+    alert('Download failed; see console for details');
+  }
 };
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
