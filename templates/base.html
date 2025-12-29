@@ -13,11 +13,11 @@
   <div class="sidebar">
     <h2>DropVault</h2>
     <nav>
-      <a href="/dashboard.html">Dashboard</a>
-      <a href="/upload.html">Upload</a>
-      <a href="/myfiles.html">My Files</a>
-      <a href="/shared.html">Shared</a>
-      <a href="/settings.html">Settings</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/upload">Upload</a>
+      <a href="/myfiles">My Files</a>
+      <a href="/shared">Shared</a>
+      <a href="/settings">Settings</a>
       <a href="#" id="logoutBtn">Logout</a>
     </nav>
   </div>
@@ -37,7 +37,7 @@
     // 🚪 Logout
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
-      window.location.href = "/login.html";
+      window.location.href = "/login";
     });
   </script>
 
