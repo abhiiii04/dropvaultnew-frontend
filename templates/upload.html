@@ -1,17 +1,36 @@
-<form id="uploadForm" enctype="multipart/form-data">
-  <input type="file" id="file" required>
-  <button type="submit" class="btn-upload">Upload</button>
-</form>
+{% extends 'base.html' %}
+{% block content %}
 
-<script>
-const API_BASE = "https://dropvault-2.onrender.com"; // Backend URL
+<style>
+/* keep styles consistent with myfiles page */
+.files-wrapper { max-width: 750px; margin: 40px auto; padding: 10px 20px; }
+.section-title { font-size: 28px; font-weight: 700; margin-bottom: 25px; }
+.upload-card { background: #f9fafb; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.upload-row { display:flex; gap:12px; align-items:center; }
+.btn-upload { background:#3b82f6; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+.btn-upload:disabled { opacity:0.6; cursor:not-allowed; }
+</style>
+
+<div class="files-wrapper">
+  <h1 class="section-title">Upload</h1>
+
+  <div class="upload-card">
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div class="upload-row">
+        <input type="file" id="file" required />
+        <button type="submit" class="btn-upload">Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
 
 document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const token = localStorage.getItem("token");
-  // If no token, we'll attempt session-cookie based auth on the upload request
-
   const file = document.getElementById("file").files[0];
   if (!file) return alert("⚠️ Please select a file.");
 
@@ -24,18 +43,22 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     credentials: 'include' // include session cookie if backend uses session auth
   };
 
-  if (token) {
-    fetchOptions.headers = { "Authorization": `Bearer ${token}` };
-  }
+  if (token) fetchOptions.headers = { "Authorization": `Bearer ${token}` };
 
-  const res = await fetch(`${API_BASE}/api/upload/`, fetchOptions);
-
-  if (res.ok) {
-    alert("📁 File Uploaded Successfully!");
-    window.location.href = "/myfiles"; // redirect after upload
-  } else {
-    const errorText = await res.text();
-    alert("❌ Upload Failed: " + errorText);
+  try {
+    const res = await fetch(`${API_BASE}/api/upload/`, fetchOptions);
+    if (res.ok) {
+      alert("📁 File Uploaded Successfully!");
+      window.location.href = "/myfiles"; // redirect after upload
+    } else {
+      const errorText = await res.text();
+      alert("❌ Upload Failed: " + errorText);
+    }
+  } catch (err) {
+    console.error('Upload failed', err);
+    alert('❌ Network error during upload. See console.');
   }
 });
 </script>
+
+{% endblock %}
