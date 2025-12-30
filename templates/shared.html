@@ -126,6 +126,21 @@
 
 </style>
 
+<div class="shared-wrapper">
+  <h1 class="shared-title">Shared Files</h1>
+  <p class="shared-subtitle">Files shared by you or with you.</p>
+
+  <div class="search-box">
+    <input id="sharedSearch" placeholder="Search shared files...">
+  </div>
+
+  <table class="shared-table">
+    <thead>
+      <tr><th>Filename</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="shared-list"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
+  </table>
+</div>
 
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
@@ -189,6 +204,8 @@ window.getShare = async (id) => {
     alert('Error creating share link');
   }
 };
+
+{% endblock %}
 
 loadSharedFiles();
 </script>
