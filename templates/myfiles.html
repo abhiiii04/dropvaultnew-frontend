@@ -104,11 +104,22 @@ async function loadMyFiles() {
         return window.location.href = '/login';
       }
 
-      // Normalize files: API might return { files: [...] } or directly an array [...]
+      // Normalize files: API may return multiple shapes
       let files = [];
-      if (Array.isArray(data)) files = data;
-      else if (data && Array.isArray(data.files)) files = data.files;
-      else {
+      let shared = [];
+      if (Array.isArray(data)) {
+        files = data;
+      } else if (data) {
+        if (Array.isArray(data.files)) files = data.files;
+        if (Array.isArray(data.your_files)) files = data.your_files;
+        if (Array.isArray(data.yourFiles)) files = data.yourFiles;
+
+        if (Array.isArray(data.shared_files)) shared = data.shared_files;
+        if (Array.isArray(data.sharedFiles)) shared = data.sharedFiles;
+        if (Array.isArray(data.shared)) shared = data.shared;
+      }
+
+      if (!files.length && !shared.length) {
         yourList.innerHTML = "<li>⚠ Error: unexpected response from server</li>";
         console.error('Unexpected files response', data);
         return;
@@ -126,6 +137,20 @@ async function loadMyFiles() {
             <button onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
             <button onclick="shareFile('${f.id}')">🔗</button>
             <button onclick="deleteFile('${f.id}')">🗑</button>
+          </li>
+        `;
+      });
+      // populate shared list
+      sharedList.innerHTML = "";
+      shared.forEach(f => {
+        const slug = f.slug || f.share_slug || f.short || '';
+        const download_url = f.download_url || f.url || '';
+        sharedList.innerHTML += `
+          <li class="file-item">
+            <img class="file-icon" src="${FILE_ICON}">
+            <span class="file-name">${f.filename}</span>
+            <button onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
+            <button onclick="shareFile('${f.id}')">🔗</button>
           </li>
         `;
       });
