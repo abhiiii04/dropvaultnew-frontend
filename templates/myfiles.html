@@ -56,6 +56,16 @@
   font-size: 16px;
   font-weight: 500;
 }
+/* Action buttons container */
+.file-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+.file-actions button {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
 </style>
 
 
@@ -68,11 +78,6 @@
   <h2 class="sub-heading">Shared Files</h2>
   <ul class="file-list" id="shared-files-list"><li>Loading...</li></ul>
 
-  <h2 class="sub-heading">Folders</h2>
-  <ul class="folder-list">
-      <li class="folder-item"><span class="folder-name">DropVault drafts</span></li>
-      <li class="folder-item"><span class="folder-name">Presentations</span></li>
-      <li class="folder-item"><span class="folder-name">Archived Documents</span></li>
   </ul>
 </div>
 
@@ -134,9 +139,11 @@ async function loadMyFiles() {
           <li class="file-item">
             <img class="file-icon" src="${FILE_ICON}">
             <span class="file-name">${f.filename}</span>
-            <button onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
-            <button onclick="shareFile('${f.id}')">🔗</button>
-            <button onclick="deleteFile('${f.id}')">🗑</button>
+            <div class="file-actions">
+              <button type="button" onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
+              <button type="button" onclick="shareFile('${f.id}')">🔗</button>
+              <button type="button" onclick="deleteFile('${f.id}')">🗑</button>
+            </div>
           </li>
         `;
       });
@@ -149,8 +156,10 @@ async function loadMyFiles() {
           <li class="file-item">
             <img class="file-icon" src="${FILE_ICON}">
             <span class="file-name">${f.filename}</span>
-            <button onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
-            <button onclick="shareFile('${f.id}')">🔗</button>
+            <div class="file-actions">
+              <button type="button" onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
+              <button type="button" onclick="shareFile('${f.id}')">🔗</button>
+            </div>
           </li>
         `;
       });
