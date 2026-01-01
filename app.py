@@ -75,6 +75,10 @@ def files_page():
 def shared_page():
     return render_template("shared.html")
 
+@app.route("/trash")
+def trash_page():
+    return render_template("trash.html")
+
 @app.route("/settings")
 def settings_page():
     return render_template("settings.html")
