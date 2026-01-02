@@ -107,18 +107,43 @@ async function deleteFile(id) {
   if (!token) return alert("Not logged in");
 
   try {
-    // ✅ FIXED: Use correct endpoint — /api/delete/<id>/?permanent=true (DELETE)
-    const res = await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, {
-      method: "DELETE",
+    // Use trash-specific delete endpoint that removes item permanently from trash
+    const res = await fetch(`${API_BASE}/api/trash/delete/`, {
+      method: 'POST',
       credentials: 'include',
       headers: {
-        "Authorization": token
-      }
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify({ id })
     });
 
+    const txt = await res.text();
+    // If trash-delete endpoint replies with an error saying item is already in trash,
+    // try the generic delete endpoint as a fallback (some backends accept DELETE /api/delete/<id>/)
     if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Permanent delete failed (${res.status}): ${errText}`);
+      let errMsg = txt;
+      try { errMsg = JSON.parse(txt).error || JSON.parse(txt).message || txt; } catch (_) {}
+
+      if (String(errMsg).toLowerCase().includes('already in trash') || res.status === 400) {
+        // fallback to DELETE /api/delete/<id>/ (user provided this endpoint)
+        const delRes = await fetch(`${API_BASE}/api/delete/${id}/`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Authorization': token }
+        });
+        const delTxt = await delRes.text();
+        if (!delRes.ok) {
+          let delErr = delTxt;
+          try { delErr = JSON.parse(delTxt).error || JSON.parse(delTxt).message || delTxt; } catch (_) {}
+          throw new Error(`Permanent delete failed (${delRes.status}): ${delErr}`);
+        }
+        alert('🗑️ File Permanently Deleted!');
+        loadTrash();
+        return;
+      }
+
+      throw new Error(`Permanent delete failed (${res.status}): ${errMsg}`);
     }
 
     alert("🗑️ File Permanently Deleted!");
