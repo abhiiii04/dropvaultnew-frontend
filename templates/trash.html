@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="main">
+  <h1>🗑️ Trash</h1>
+  <p>Files here will be permanently deleted after 30 days. You can restore them anytime.</p>
+
+  <table class="dashboard-table">
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Deleted On</th>
+        <th>Days Remaining</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="trashTable">
+      <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const API_BASE = "https://dropvault-2.onrender.com";
+
+async function loadTrash(){
+  const token = localStorage.getItem("token");
+  if(!token) return location.href="/login";
+
+  const res = await fetch(`${API_BASE}/api/trash/`, {
+    headers: { "Authorization": token }
+  });
+
+  const data = await res.json();
+  console.log("TRASH DATA:", data);
+
+  const table = document.getElementById("trashTable");
+  table.innerHTML = "";
+
+  data.trash.forEach(file=>{
+    table.innerHTML += `
+      <tr>
+        <td>${file.filename}</td>
+        <td>${file.deleted_on}</td>
+        <td>${file.days_remaining} days</td>
+        <td>
+          <button onclick="restoreFile('${file.id}')" class="btn small restore-btn">♻️ Restore</button>
+          <button onclick="deleteFile('${file.id}')" class="btn small delete-btn">❌ Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function restoreFile(id){
+  const token = localStorage.getItem("token");
+  await fetch(`${API_BASE}/api/trash/restore/`, {
+    method:"POST",
+    headers:{
+      "Authorization": token,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({id})
+  });
+  alert("♻️ File Restored!");
+  loadTrash();
+}
+
+async function deleteFile(id){
+  const token = localStorage.getItem("token");
+  const confirmDelete = confirm("⚠️ Permanently delete this file? This cannot be undone.");
+  if(!confirmDelete) return;
+
+  await fetch(`${API_BASE}/api/trash/delete/`, {
+    method:"POST",
+    headers:{
+      "Authorization": token,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({id})
+  });
+
+  alert("🗑️ File Permanently Deleted!");
+  loadTrash();
+}
+
+loadTrash();
+</script>
+{% endblock %}

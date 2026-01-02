@@ -278,11 +278,48 @@ window.shareFile = async (id) => {
   alert("Share Link: " + (d.share_url ? (API_BASE + d.share_url) : (d.url || '')));
 };
 window.deleteFile = async (id) => {
-  if (!confirm("Delete this file?")) return;
+  if (!confirm("Move this file to Trash? You can restore it later.")) return;
   const token = localStorage.getItem("token");
-  const opts = { method: "DELETE", credentials: 'include', headers: {} };
-  if (token) opts.headers["Authorization"] = `Bearer ${token}`;
-  await fetch(`${API_BASE}/api/delete/${id}/`, opts);
+
+  const candidates = [
+    { url: `${API_BASE}/api/trash/move/`, method: 'POST', bodyKey: 'id' },
+    { url: `${API_BASE}/api/trash/`, method: 'POST', bodyKey: 'id' },
+    { url: `${API_BASE}/api/trash/add/`, method: 'POST', bodyKey: 'id' },
+    { url: `${API_BASE}/api/trash/move_file/`, method: 'POST', bodyKey: 'file_id' },
+  ];
+
+  let moved = false;
+  for (const c of candidates) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const body = c.bodyKey === 'file_id' ? JSON.stringify({ file_id: id }) : JSON.stringify({ id });
+      const res = await fetch(c.url, { method: c.method, credentials: 'include', headers, body });
+      if (res.ok) { moved = true; break; }
+      // try next candidate on non-ok
+    } catch (e) {
+      console.warn('trash candidate error', c.url, e);
+      continue;
+    }
+  }
+
+  if (!moved) {
+    // fallback to permanent delete if trash endpoints not available
+    try {
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      await fetch(`${API_BASE}/api/delete/${id}/`, { method: 'DELETE', credentials: 'include', headers });
+      alert('File permanently deleted (trash not available).');
+      loadMyFiles();
+      return;
+    } catch (e) {
+      console.error('Fallback delete failed', e);
+      alert('Failed to delete file. See console for details.');
+      return;
+    }
+  }
+
+  alert('♻️ File moved to Trash');
   loadMyFiles();
 };
 
