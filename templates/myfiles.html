@@ -272,7 +272,7 @@ window.downloadFile = async (id, slug, url) => {
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
   const opts = { method: "POST", headers: { "Content-Type": "application/json" }, credentials: 'include', body: JSON.stringify({ file_id: id }) };
-  if (token) opts.headers["Authorization"] = `Bearer ${token}`;
+  if (token) opts.headers["Authorization"] = token;
   const r = await fetch(`${API_BASE}/api/files/share/`, opts);
   const d = await r.json();
   alert("Share Link: " + (d.share_url ? (API_BASE + d.share_url) : (d.url || '')));
@@ -281,6 +281,23 @@ window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash? You can restore it later.")) return;
   const token = localStorage.getItem("token");
 
+  // First try the standard delete endpoint without permanent flag — many backends
+  // use this as a soft-delete (move to trash).
+  try {
+    const res = await fetch(`${API_BASE}/api/delete/${id}/`, { method: 'DELETE', credentials: 'include', headers: { 'Authorization': token } });
+    if (res.ok) {
+      alert('♻️ File moved to Trash');
+      loadMyFiles();
+      return;
+    }
+    // if 404 or not found, fallback to other possible trash endpoints below
+    const txt = await res.text();
+    console.warn('DELETE /api/delete/ response:', res.status, txt);
+  } catch (e) {
+    console.warn('Soft-delete attempt failed', e);
+  }
+
+  // Try known trash endpoints if delete didn't succeed
   const candidates = [
     { url: `${API_BASE}/api/trash/move/`, method: 'POST', bodyKey: 'id' },
     { url: `${API_BASE}/api/trash/`, method: 'POST', bodyKey: 'id' },
@@ -308,7 +325,7 @@ window.deleteFile = async (id) => {
     try {
       const headers = {};
       if (token) headers['Authorization'] = token;
-      await fetch(`${API_BASE}/api/delete/${id}/`, { method: 'DELETE', credentials: 'include', headers });
+      await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, { method: 'DELETE', credentials: 'include', headers });
       alert('File permanently deleted (trash not available).');
       loadMyFiles();
       return;
