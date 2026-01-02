@@ -59,8 +59,8 @@ async function loadTrash() {
           <td>${formattedDate}</td>
           <td>${file.days_remaining} days</td>
           <td>
-            <button onclick="restoreFile(${file.id})" class="btn small restore-btn">♻️ Restore</button>
-            <button onclick="deleteFile(${file.id})" class="btn small delete-btn">❌ Delete</button>
+            <button onclick="restoreFile('${file.id}')" class="btn small restore-btn">♻️ Restore</button>
+            <button onclick="deleteFile('${file.id}')" class="btn small delete-btn">🗑️ Delete Permanently</button>
           </td>
         </tr>
       `;
