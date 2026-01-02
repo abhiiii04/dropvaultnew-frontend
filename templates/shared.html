@@ -151,8 +151,8 @@ async function loadSharedFiles() {
 
     const list = document.getElementById("shared-list");
     const res = await fetch(`${API_BASE}/files/shared/`, {
-        headers:{ "Authorization":`Bearer ${token}` },
-        credentials: 'include'
+      headers:{ "Authorization": token },
+      credentials: 'include'
     });
 
     const data = await res.json();
@@ -182,7 +182,7 @@ window.copyLink = (url)=>{
 window.getShare = async (id) => {
   const token = localStorage.getItem('token');
   const opts = { method: 'GET', credentials: 'include', headers: {} };
-  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+  if (token) opts.headers['Authorization'] = token;
 
   try {
     const r = await fetch(`${API_BASE}/api/share/${id}/`, opts);

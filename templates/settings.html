@@ -82,7 +82,7 @@ if (!token) location.href = "/login";
 /* ---------------- LOAD USER DATA ---------------- */
 async function loadSettings(){
   const res = await fetch(`${API_BASE}/user/profile`, {
-    headers: { "Authorization": `Bearer ${token}` }
+    headers: { "Authorization": token }
   });
   const data = await res.json();
 
@@ -106,7 +106,7 @@ document.getElementById("profileForm").addEventListener("submit", async(e)=>{
 
   const res = await fetch(`${API_BASE}/user/profile/update`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", "Authorization": token },
     body: JSON.stringify({ username, email })
   });
 
@@ -121,7 +121,7 @@ document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
 
   const res = await fetch(`${API_BASE}/user/password/update`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", "Authorization": token },
     body: JSON.stringify({ password })
   });
 
@@ -133,7 +133,7 @@ document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
 document.getElementById("toggle2FA").addEventListener("click", async()=>{
   const res = await fetch(`${API_BASE}/user/2fa/toggle`, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${token}` }
+    headers: { "Authorization": token }
   });
 
   alert(res.ok ? "2FA Toggled 🔐" : "Request Failed ❌");
@@ -149,7 +149,7 @@ document.getElementById("prefsForm").addEventListener("submit", async(e)=>{
 
   const res = await fetch(`${API_BASE}/user/preferences/update`, {
     method: "POST",
-    headers: { "Content-Type":"application/json", "Authorization":`Bearer ${token}` },
+    headers: { "Content-Type":"application/json", "Authorization": token },
     body: JSON.stringify({ theme, notifications })
   });
 

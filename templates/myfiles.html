@@ -96,7 +96,7 @@ async function loadMyFiles() {
     try {
       // Always include credentials so session-cookie auth works; include token header when present
       const fetchOpts = { headers: {}, credentials: 'include' };
-      if (token) fetchOpts.headers["Authorization"] = `Bearer ${token}`;
+      if (token) fetchOpts.headers["Authorization"] = token;
 
       const res = await fetch(`${API_BASE}/api/list/`, fetchOpts);
       const text = await res.text();
@@ -178,7 +178,7 @@ window.downloadFile = async (id, slug, url) => {
   // Fallback: try the API file-download endpoint used by the backend
   const token = localStorage.getItem("token");
   const opts = { method: 'GET', credentials: 'include', headers: {} };
-  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+  if (token) opts.headers['Authorization'] = token;
 
   try {
     // Try multiple possible endpoints in sequence until one succeeds
@@ -252,7 +252,7 @@ window.downloadFile = async (id, slug, url) => {
     try {
       const token = localStorage.getItem("token");
       const opts = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: id }) };
-      if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+      if (token) opts.headers['Authorization'] = token;
       const r = await fetch(`${API_BASE}/api/files/share/`, opts);
       if (r.ok) {
         const j = await r.json();
@@ -292,7 +292,7 @@ window.deleteFile = async (id) => {
   for (const c of candidates) {
     try {
       const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) headers['Authorization'] = token;
       const body = c.bodyKey === 'file_id' ? JSON.stringify({ file_id: id }) : JSON.stringify({ id });
       const res = await fetch(c.url, { method: c.method, credentials: 'include', headers, body });
       if (res.ok) { moved = true; break; }
@@ -307,7 +307,7 @@ window.deleteFile = async (id) => {
     // fallback to permanent delete if trash endpoints not available
     try {
       const headers = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) headers['Authorization'] = token;
       await fetch(`${API_BASE}/api/delete/${id}/`, { method: 'DELETE', credentials: 'include', headers });
       alert('File permanently deleted (trash not available).');
       loadMyFiles();

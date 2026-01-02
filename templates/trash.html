@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="main">
-  <h1>🗑️ Trash</h1>
+  <h1>Trash</h1>
   <p>Files here will be permanently deleted after 30 days. You can restore them anytime.</p>
 
   <table class="dashboard-table">
@@ -20,69 +20,113 @@
 </div>
 
 <script>
+// ✅ FIXED: Removed trailing spaces in API_BASE
 const API_BASE = "https://dropvault-2.onrender.com";
 
-async function loadTrash(){
+async function loadTrash() {
   const token = localStorage.getItem("token");
-  if(!token) return location.href="/login";
+  if (!token) return location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/api/trash/`, {
-    headers: { "Authorization": token }
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/trash/`, {
+      headers: {
+        "Authorization": `Bearer ${token}`  // ✅ Added "Bearer"
+      }
+    });
 
-  const data = await res.json();
-  console.log("TRASH DATA:", data);
+    if (!res.ok) {
+      throw new Error(`Failed to load trash: ${res.status}`);
+    }
 
-  const table = document.getElementById("trashTable");
-  table.innerHTML = "";
+    const data = await res.json();
+    const table = document.getElementById("trashTable");
 
-  data.trash.forEach(file=>{
-    table.innerHTML += `
-      <tr>
-        <td>${file.filename}</td>
-        <td>${file.deleted_on}</td>
-        <td>${file.days_remaining} days</td>
-        <td>
-          <button onclick="restoreFile('${file.id}')" class="btn small restore-btn">♻️ Restore</button>
-          <button onclick="deleteFile('${file.id}')" class="btn small delete-btn">❌ Delete</button>
-        </td>
-      </tr>
-    `;
-  });
+    // ✅ FIXED: Use data.files (not data.trash)
+    if (!data.files || data.files.length === 0) {
+      table.innerHTML = `<tr><td colspan="4" style="text-align:center;">No files in trash</td></tr>`;
+      return;
+    }
+
+    table.innerHTML = data.files.map(file => {
+      // ✅ FIXED: Use file.deleted_at (not deleted_on)
+      const deletedDate = new Date(file.deleted_at);
+      const formattedDate = deletedDate.toLocaleDateString(); // e.g., "1/2/2026"
+
+      return `
+        <tr>
+          <td>${file.filename}</td>
+          <td>${formattedDate}</td>
+          <td>${file.days_remaining} days</td>
+          <td>
+            <button onclick="restoreFile(${file.id})" class="btn small restore-btn">♻️ Restore</button>
+            <button onclick="deleteFile(${file.id})" class="btn small delete-btn">❌ Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Error loading trash:", err);
+    document.getElementById("trashTable").innerHTML = 
+      `<tr><td colspan="4" style="text-align:center;color:red;">Error loading trash. Check console.</td></tr>`;
+  }
 }
 
-async function restoreFile(id){
+async function restoreFile(id) {
   const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/trash/restore/`, {
-    method:"POST",
-    headers:{
-      "Authorization": token,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({id})
-  });
-  alert("♻️ File Restored!");
-  loadTrash();
+  if (!token) return alert("Not logged in");
+
+  try {
+    // ✅ FIXED: Use correct endpoint — /api/restore/<id>/ (POST, no body)
+    const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Restore failed (${res.status}): ${errText}`);
+    }
+
+    alert("♻️ File Restored!");
+    loadTrash();
+  } catch (err) {
+    console.error("Restore error:", err);
+    alert("❌ Failed to restore file. See console for details.");
+  }
 }
 
-async function deleteFile(id){
+async function deleteFile(id) {
+  if (!confirm("⚠️ Permanently delete this file? This cannot be undone.")) return;
+
   const token = localStorage.getItem("token");
-  const confirmDelete = confirm("⚠️ Permanently delete this file? This cannot be undone.");
-  if(!confirmDelete) return;
+  if (!token) return alert("Not logged in");
 
-  await fetch(`${API_BASE}/api/trash/delete/`, {
-    method:"POST",
-    headers:{
-      "Authorization": token,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({id})
-  });
+  try {
+    // ✅ FIXED: Use correct endpoint — /api/delete/<id>/?permanent=true (DELETE)
+    const res = await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
 
-  alert("🗑️ File Permanently Deleted!");
-  loadTrash();
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Permanent delete failed (${res.status}): ${errText}`);
+    }
+
+    alert("🗑️ File Permanently Deleted!");
+    loadTrash();
+  } catch (err) {
+    console.error("Permanent delete error:", err);
+    alert("❌ Failed to delete file permanently. See console for details.");
+  }
 }
 
-loadTrash();
+// Load on page ready
+document.addEventListener("DOMContentLoaded", loadTrash);
 </script>
 {% endblock %}

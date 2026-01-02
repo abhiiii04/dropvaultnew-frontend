@@ -54,7 +54,7 @@ async function loadDashboard(){
     // Prefer token-based auth when available
     res = await fetch(`${API_BASE}/dashboard/`, {
       method: "GET",
-      headers: { "Authorization": `Bearer ${token}` }
+      headers: { "Authorization": token }
     });
   } else {
     // Try session-cookie based auth (server-set session cookie)

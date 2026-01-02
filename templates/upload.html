@@ -43,7 +43,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     credentials: 'include' // include session cookie if backend uses session auth
   };
 
-  if (token) fetchOptions.headers = { "Authorization": `Bearer ${token}` };
+  if (token) fetchOptions.headers = { "Authorization": token };
 
   try {
     const res = await fetch(`${API_BASE}/api/upload/`, fetchOptions);
