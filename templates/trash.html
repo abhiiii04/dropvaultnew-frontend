@@ -72,7 +72,7 @@ async function loadTrash() {
           <td>${file.days_remaining} days</td>
           <td>
             <button onclick="restoreFile('${file.id}')" class="btn small restore-btn">♻️ Restore</button>
-            <button onclick="deleteFile('${file.id}')" class="btn small delete-btn">🗑️ Delete Permanently</button>
+            <button onclick="unavailablePermanentDelete('${file.id}')" class="btn small delete-btn" title="Permanent delete currently unsupported">🗑️ Delete Permanently</button>
           </td>
         </tr>
       `;
@@ -185,6 +185,11 @@ async function deleteFile(id) {
     console.error('Permanent delete error:', err);
     alert('❌ Failed to delete file permanently. See console for details.');
   }
+}
+
+// Informational handler when backend doesn't support permanent-delete
+function unavailablePermanentDelete(id) {
+  alert('Permanent delete is not supported by the server API.\n\nOptions:\n- Permanently delete via the backend admin or DB, or\n- Add a permanent-delete endpoint (e.g. DELETE /api/delete/<id>/?permanent=true) on the server.');
 }
 
 // Load on page ready
