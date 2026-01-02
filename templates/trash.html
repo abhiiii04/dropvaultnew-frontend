@@ -20,8 +20,8 @@
 </div>
 
 <script>
-// ✅ FIXED: Removed trailing spaces in API_BASE
-const API_BASE = "https://dropvault-2.onrender.com";
+// Ensure we don't redeclare a global API_BASE (prevents duplicate-const errors)
+if (typeof API_BASE === 'undefined') { var API_BASE = "https://dropvault-2.onrender.com"; }
 
 async function loadTrash() {
   const token = localStorage.getItem("token");
@@ -29,8 +29,9 @@ async function loadTrash() {
 
   try {
     const res = await fetch(`${API_BASE}/api/trash/`, {
+      credentials: 'include',
       headers: {
-        "Authorization": `Bearer ${token}`  // ✅ Added "Bearer"
+        "Authorization": token
       }
     });
 
@@ -79,8 +80,9 @@ async function restoreFile(id) {
     // ✅ FIXED: Use correct endpoint — /api/restore/<id>/ (POST, no body)
     const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
       method: "POST",
+      credentials: 'include',
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": token,
         "Content-Type": "application/json"
       }
     });
@@ -108,8 +110,9 @@ async function deleteFile(id) {
     // ✅ FIXED: Use correct endpoint — /api/delete/<id>/?permanent=true (DELETE)
     const res = await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, {
       method: "DELETE",
+      credentials: 'include',
       headers: {
-        "Authorization": `Bearer ${token}`
+        "Authorization": token
       }
     });
 
