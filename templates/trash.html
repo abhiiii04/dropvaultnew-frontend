@@ -107,7 +107,24 @@ async function deleteFile(id) {
   if (!token) return alert("Not logged in");
 
   try {
-    // Use trash-specific delete endpoint that removes item permanently from trash
+    // Prefer calling DELETE /api/delete/<id>/ which your backend exposes
+    const delRes = await fetch(`${API_BASE}/api/delete/${id}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'Authorization': token }
+    });
+
+    if (delRes.ok) {
+      alert('🗑️ File Permanently Deleted!');
+      loadTrash();
+      return;
+    }
+
+    // If DELETE returned 404 or other non-ok, try trash-specific endpoint as fallback
+    const delTxt = await delRes.text();
+    console.warn('DELETE /api/delete/ response:', delRes.status, delTxt);
+
+    // try trash endpoint fallback
     const res = await fetch(`${API_BASE}/api/trash/delete/`, {
       method: 'POST',
       credentials: 'include',
@@ -119,38 +136,17 @@ async function deleteFile(id) {
     });
 
     const txt = await res.text();
-    // If trash-delete endpoint replies with an error saying item is already in trash,
-    // try the generic delete endpoint as a fallback (some backends accept DELETE /api/delete/<id>/)
     if (!res.ok) {
       let errMsg = txt;
       try { errMsg = JSON.parse(txt).error || JSON.parse(txt).message || txt; } catch (_) {}
-
-      if (String(errMsg).toLowerCase().includes('already in trash') || res.status === 400) {
-        // fallback to DELETE /api/delete/<id>/ (user provided this endpoint)
-        const delRes = await fetch(`${API_BASE}/api/delete/${id}/`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Authorization': token }
-        });
-        const delTxt = await delRes.text();
-        if (!delRes.ok) {
-          let delErr = delTxt;
-          try { delErr = JSON.parse(delTxt).error || JSON.parse(delTxt).message || delTxt; } catch (_) {}
-          throw new Error(`Permanent delete failed (${delRes.status}): ${delErr}`);
-        }
-        alert('🗑️ File Permanently Deleted!');
-        loadTrash();
-        return;
-      }
-
       throw new Error(`Permanent delete failed (${res.status}): ${errMsg}`);
     }
 
-    alert("🗑️ File Permanently Deleted!");
+    alert('🗑️ File Permanently Deleted!');
     loadTrash();
   } catch (err) {
-    console.error("Permanent delete error:", err);
-    alert("❌ Failed to delete file permanently. See console for details.");
+    console.error('Permanent delete error:', err);
+    alert('❌ Failed to delete file permanently. See console for details.');
   }
 }
 
