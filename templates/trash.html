@@ -121,50 +121,46 @@ async function deleteFile(id) {
       return;
     }
 
-    // If backend says the item is already in trash, attempt explicit permanent delete via query flag
+    // Parse backend error message
     let parsed;
     try { parsed = JSON.parse(delTxt); } catch (_) { parsed = null; }
     const errorMsg = (parsed && (parsed.error || parsed.message)) || delTxt || '';
 
-    if (delRes.status === 400 && String(errorMsg).toLowerCase().includes('already in trash')) {
-      // Try permanent-delete variant
-      const permRes = await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Authorization': token }
-      });
-      const permTxt = await permRes.text();
-      if (permRes.ok) {
-        alert('🗑️ File Permanently Deleted!');
-        loadTrash();
-        return;
+    // If backend reports 'Already in trash', try multiple permanent-delete variants until one succeeds
+    if (String(errorMsg).toLowerCase().includes('already in trash') || delRes.status === 400) {
+      const permCandidates = [
+        { method: 'DELETE', url: `${API_BASE}/api/delete/${id}/?permanent=true` },
+        { method: 'POST',   url: `${API_BASE}/api/delete/${id}/?permanent=true`, bodyJson: true },
+        { method: 'DELETE', url: `${API_BASE}/api/delete/permanent/${id}/` },
+        { method: 'POST',   url: `${API_BASE}/api/delete/permanent/${id}/`, bodyJson: true },
+        { method: 'POST',   url: `${API_BASE}/api/trash/delete/`, bodyJson: true },
+      ];
+
+      for (const c of permCandidates) {
+        try {
+          const headers = c.bodyJson ? { 'Content-Type': 'application/json', 'Authorization': token } : { 'Authorization': token };
+          const opts = { method: c.method, credentials: 'include', headers };
+          if (c.bodyJson) opts.body = JSON.stringify({ id });
+          const r = await fetch(c.url, opts);
+          const body = await r.text();
+          if (r.ok) {
+            alert('🗑️ File Permanently Deleted!');
+            loadTrash();
+            return;
+          }
+          console.warn('perm-candidate failed', c.method, c.url, r.status, body);
+        } catch (e) {
+          console.warn('perm-candidate error', c.method, c.url, e);
+          continue;
+        }
       }
-      let permErr = permTxt;
-      try { permErr = JSON.parse(permTxt).error || JSON.parse(permTxt).message || permTxt; } catch (_) {}
-      throw new Error(`Permanent delete failed (${permRes.status}): ${permErr}`);
+
+      throw new Error(`Permanent delete failed: attempted multiple endpoints (last message: ${errorMsg})`);
     }
 
-    // If not specifically 'already in trash', try trash-specific endpoint as fallback
+    // If not 'already in trash', surface backend response
     console.warn('DELETE /api/delete/ response:', delRes.status, delTxt);
-    const res = await fetch(`${API_BASE}/api/trash/delete/`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token
-      },
-      body: JSON.stringify({ id })
-    });
-
-    const txt = await res.text();
-    if (!res.ok) {
-      let errMsg = txt;
-      try { errMsg = JSON.parse(txt).error || JSON.parse(txt).message || txt; } catch (_) {}
-      throw new Error(`Permanent delete failed (${res.status}): ${errMsg}`);
-    }
-
-    alert('🗑️ File Permanently Deleted!');
-    loadTrash();
+    throw new Error(`Permanent delete failed (${delRes.status}): ${delTxt}`);
   } catch (err) {
     console.error('Permanent delete error:', err);
     alert('❌ Failed to delete file permanently. See console for details.');
