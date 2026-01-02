@@ -23,16 +23,28 @@
 // Ensure we don't redeclare a global API_BASE (prevents duplicate-const errors)
 if (typeof API_BASE === 'undefined') { var API_BASE = "https://dropvault-2.onrender.com"; }
 
+// Read a cookie value by name (used to get CSRF token if backend provides it)
+function getCookie(name) {
+  const v = `; ${document.cookie}`;
+  const parts = v.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
 async function loadTrash() {
   const token = localStorage.getItem("token");
   if (!token) return location.href = "/login";
 
   try {
+    const headers = {};
+    const csrftoken = getCookie('csrftoken');
+    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+    // include Authorization if available (some backends accept either)
+    if (token) headers['Authorization'] = token;
+
     const res = await fetch(`${API_BASE}/api/trash/`, {
       credentials: 'include',
-      headers: {
-        "Authorization": token
-      }
+      headers
     });
 
     if (!res.ok) {
@@ -78,13 +90,16 @@ async function restoreFile(id) {
 
   try {
     // ✅ FIXED: Use correct endpoint — /api/restore/<id>/ (POST, no body)
+    const headers = { 'Content-Type': 'application/json' };
+    const csrftoken = getCookie('csrftoken');
+    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+    if (token) headers['Authorization'] = token;
+
     const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
       method: "POST",
       credentials: 'include',
-      headers: {
-        "Authorization": token,
-        "Content-Type": "application/json"
-      }
+      headers,
+      body: JSON.stringify({})
     });
 
     if (!res.ok) {
@@ -108,10 +123,15 @@ async function deleteFile(id) {
 
   try {
     // Prefer calling DELETE /api/delete/<id>/ which your backend exposes
+    const headers = {};
+    const csrftoken = getCookie('csrftoken');
+    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+    if (token) headers['Authorization'] = token;
+
     const delRes = await fetch(`${API_BASE}/api/delete/${id}/`, {
       method: 'DELETE',
       credentials: 'include',
-      headers: { 'Authorization': token }
+      headers
     });
 
     const delTxt = await delRes.text();
