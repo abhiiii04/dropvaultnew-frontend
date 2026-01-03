@@ -2,7 +2,6 @@
 {% block content %}
 
 <style>
-/* Page Layout */
 .shared-wrapper {
   max-width: 900px;
   margin: 2px auto;
@@ -20,14 +19,11 @@
   margin-bottom: 20px;
 }
 
-/* Search Bar */
 .search-box {
   background: #f2f2f8;
   border-radius: 10px;
   padding: 12px 15px;
   margin-bottom: 25px;
-  display: flex;
-  align-items: center;
 }
 
 .search-box input {
@@ -35,55 +31,56 @@
   border: none;
   background: transparent;
   outline: none;
-  font-size: 15px;
 }
 
-/* Table */
 .shared-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  font-size: 15px;
 }
 
-.shared-table thead { background: #fafafa; }
-.shared-table th, .shared-table td {
+.shared-table th,
+.shared-table td {
   padding: 14px 20px;
   border-bottom: 1px solid #eee;
   text-align: left;
 }
 
-/* Status Badges */
 .badge {
   padding: 6px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
 }
-.badge-active { background: #d4edda; color: #155724; }
-.badge-expired { background: #f8d7da; color: #721c24; }
 
-/* Actions */
+.badge-active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-expired {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 .copy-link-btn {
   color: #4a4ac7;
   font-weight: 600;
   cursor: pointer;
   background: none;
   border: none;
-  padding: 0;
   text-decoration: underline;
 }
 </style>
 
 <div class="shared-wrapper">
   <h1 class="shared-title">Shared Files</h1>
-  <p class="shared-subtitle">Manage your active and expired share links.</p>
+  <p class="shared-subtitle">Files you have shared using secure links.</p>
 
   <div class="search-box">
-    <input id="sharedSearch" placeholder="Search files..." onkeyup="filterFiles()">
+    <input id="sharedSearch" placeholder="Search shared files..." onkeyup="filterShared()">
   </div>
 
   <table class="shared-table">
@@ -96,80 +93,118 @@
       </tr>
     </thead>
     <tbody id="shared-list">
-      <tr><td colspan="4" style="text-align:center;">Loading shared files...</td></tr>
+      <tr>
+        <td colspan="4" style="text-align:center;">Loading shared files...</td>
+      </tr>
     </tbody>
   </table>
 </div>
 
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
+<script>
+const API_BASE = "https://dropvault-2.onrender.com";
 
-/*
-  IMPORTANT:
-  Backend does NOT provide an endpoint to LIST shared files.
-  Shared links are generated per-file using /api/share/<id>/.
-*/
-
+/* ---------------- LOAD SHARED FILES ---------------- */
 async function loadSharedFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
+  if (!token) return window.location.href = "/login";
 
   const list = document.getElementById("shared-list");
 
-  list.innerHTML = `
-    <tr>
-      <td colspan="4" style="text-align:center;">
-        No shared files to display.<br>
-        Use <strong>My Files → Share</strong> to generate links.
-      </td>
-    </tr>
-  `;
+  try {
+    const res = await fetch(`${API_BASE}/api/shared/`, {
+      method: "GET",
+      headers: {
+        "Authorization": token
+      }
+    });
+
+    const data = await res.json();
+
+    if (res.status === 401 || data.login_required) {
+      alert("Session expired. Please login again.");
+      return window.location.href = "/login";
+    }
+
+    const files = data.shared || data || [];
+
+    list.innerHTML = "";
+
+    if (!files.length) {
+      list.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;">
+            No shared files to display.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    files.forEach(file => {
+      const expired = file.expiry && new Date(file.expiry) < new Date();
+      const statusClass = expired ? "badge-expired" : "badge-active";
+      const statusText = expired ? "Expired" : "Active";
+
+      list.innerHTML += `
+        <tr class="shared-row">
+          <td>${file.filename}</td>
+          <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "-"}</td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>
+            <button class="copy-link-btn"
+              onclick="copyShareLink('${file.id}')">
+              Copy Link
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center; color:red;">
+          Failed to load shared files.
+        </td>
+      </tr>`;
+  }
 }
 
-// Copy share link (WORKING endpoint)
-window.getShareLink = async (fileId) => {
+/* ---------------- COPY SHARE LINK ---------------- */
+async function copyShareLink(fileId) {
   const token = localStorage.getItem("token");
 
   try {
     const res = await fetch(`${API_BASE}/api/share/${fileId}/`, {
-      method: "GET",
-      headers: {
-        "Authorization": token   // ✅ correct format
-      }
+      headers: { "Authorization": token }
     });
 
-    if (res.status === 401) {
-      alert("Session expired. Please login again.");
-      localStorage.removeItem("token");
-      return window.location.href = "/login";
-    }
-
-    if (!res.ok) {
-      alert("Failed to generate share link");
-      return;
-    }
+    if (!res.ok) throw new Error("Share link failed");
 
     const data = await res.json();
+    const link = data.share_url || data.url || data.link;
 
-    const sharePath = data.share_url || data.url || data.link;
-    if (!sharePath) {
-      alert("Share link not returned by server");
-      return;
-    }
+    const fullLink = link.startsWith("http")
+      ? link
+      : `${API_BASE}${link}`;
 
-    const fullURL = sharePath.startsWith("http")
-      ? sharePath
-      : `https://dropvault-2.onrender.com${sharePath}`;
+    await navigator.clipboard.writeText(fullLink);
+    alert("🔗 Share link copied!");
 
-    await navigator.clipboard.writeText(fullURL);
-    alert("🔗 Link Copied!");
   } catch (err) {
-    console.error("Share error:", err);
-    alert("Error generating share link");
+    alert("Failed to generate share link.");
   }
-};
+}
 
-// Initial load
+/* ---------------- SEARCH FILTER ---------------- */
+function filterShared() {
+  const q = document.getElementById("sharedSearch").value.toLowerCase();
+  document.querySelectorAll(".shared-row").forEach(row => {
+    row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
+  });
+}
+
+/* INIT */
 loadSharedFiles();
 </script>
 

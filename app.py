@@ -5,14 +5,14 @@ import logging
 import uuid
 import traceback
 
-# -------------------------------
+
 # FLASK FRONTEND CONFIG (Render)
-# -------------------------------
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 app.secret_key = "dropvault_frontend_key"
 
-# --- error logging -------------------------------------------------
+# --- error logging ----
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 log_path = os.path.join(LOG_DIR, 'error.log')
@@ -34,20 +34,20 @@ def handle_uncaught_exceptions(e):
     return (f"Internal Server Error\nError id: {err_id}"), 500
 
 
-# --------------------------------
+
 # FRONTEND PAGE ROUTES (TEMPLATES)
-# --------------------------------
+
 @app.route("/")
 def landing():
-    return render_template("landing.html")  # homepage
+    return render_template("landing.html")  
 
 @app.route("/login")
 def login_page():
-    return render_template("login.html")  # calls Django API via JS
+    return render_template("login.html")  
 
 @app.route("/register")
 def register_page():
-    return render_template("register.html")  # calls Django API via JS
+    return render_template("register.html")  
 
 @app.route("/dashboard")
 def dashboard_page():
@@ -83,18 +83,18 @@ def trash_page():
 def settings_page():
     return render_template("settings.html")
 
-# --------------------------------
+
 # STATIC FILES (needed for images, css, js)
-# --------------------------------
+
 @app.route('/static/<path:path>')
 def send_static(path):
     return send_from_directory('static', path)
 
-# --------------------------------
+
 # RUN APP FOR RENDER DEPLOYMENT
-# --------------------------------
+
 if __name__ == "__main__":
     from waitress import serve
     import os
-    port = int(os.environ.get("PORT", 5000))  # Render gives dynamic port
+    port = int(os.environ.get("PORT", 5000))  
     serve(app, host="0.0.0.0", port=port)
