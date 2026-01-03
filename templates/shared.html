@@ -104,82 +104,69 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-// We define this as a window function so it's accessible from the HTML
-window.getShareLink = async (fileId) => {
-    const token = localStorage.getItem("token");
-    try {
-        // Calling your updated endpoint
-        const res = await fetch(`${API_BASE}/api/share/${fileId}/`, {
-            headers: { "Authorization": token }
-        });
-        
-        if (!res.ok) throw new Error("Link fetch failed");
-        
-        const data = await res.json();
-        
-        // Use share_url from server, or fallback to your render base URL format
-        let sharePath = data.share_url || data.link || data.url;
-        
-        // Ensure the URL is absolute
-        const fullURL = sharePath.startsWith('http') 
-            ? sharePath 
-            : `https://dropvault-2.onrender.com${sharePath}`;
-
-        await navigator.clipboard.writeText(fullURL);
-        alert("🔗 Link Copied to Clipboard!");
-    } catch (err) {
-        console.error(err);
-        alert("Error generating share link.");
-    }
-};
+/*
+  IMPORTANT:
+  Backend does NOT provide an endpoint to LIST shared files.
+  Shared links are generated per-file using /api/share/<id>/.
+*/
 
 async function loadSharedFiles() {
-    const token = localStorage.getItem("token");
-    if(!token) return location.href = "/login";
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
-    const list = document.getElementById("shared-list");
-    
-    try {
-        const res = await fetch(`${API_BASE}/files/shared/`, {
-            headers: { "Authorization": token }
-        });
-        const data = await res.json();
-        const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+  const list = document.getElementById("shared-list");
 
-        list.innerHTML = "";
-        if(items.length === 0) {
-            list.innerHTML = `<tr><td colspan="4" style="text-align:center;">No shared files found.</td></tr>`;
-            return;
-        }
-
-        items.forEach(s => {
-            const isExpired = s.expiry && new Date(s.expiry) < new Date();
-            const statusClass = isExpired ? "badge-expired" : "badge-active";
-            const statusText = isExpired ? "Expired" : "Active";
-            
-            list.innerHTML += `
-              <tr class="shared-row">
-                <td><strong>${s.filename}</strong></td>
-                <td>${s.expiry ? new Date(s.expiry).toLocaleString() : 'No expiry'}</td>
-                <td><span class="badge ${statusClass}">${statusText}</span></td>
-                <td>
-                    <button class="copy-link-btn" onclick="getShareLink('${s.id}')">
-                        Copy Link
-                    </button>
-                </td>
-              </tr>
-            `;
-        });
-    } catch (err) {
-        list.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>`;
-    }
+  list.innerHTML = `
+    <tr>
+      <td colspan="4" style="text-align:center;">
+        No shared files to display.<br>
+        Use <strong>My Files → Share</strong> to generate links.
+      </td>
+    </tr>
+  `;
 }
 
-window.filterFiles = () => {
-    const val = document.getElementById("sharedSearch").value.toLowerCase();
-    document.querySelectorAll(".shared-row").forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none";
+// Copy share link (WORKING endpoint)
+window.getShareLink = async (fileId) => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/share/${fileId}/`, {
+      method: "GET",
+      headers: {
+        "Authorization": token   // ✅ correct format
+      }
     });
+
+    if (res.status === 401) {
+      alert("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      return window.location.href = "/login";
+    }
+
+    if (!res.ok) {
+      alert("Failed to generate share link");
+      return;
+    }
+
+    const data = await res.json();
+
+    const sharePath = data.share_url || data.url || data.link;
+    if (!sharePath) {
+      alert("Share link not returned by server");
+      return;
+    }
+
+    const fullURL = sharePath.startsWith("http")
+      ? sharePath
+      : `https://dropvault-2.onrender.com${sharePath}`;
+
+    await navigator.clipboard.writeText(fullURL);
+    alert("🔗 Link Copied!");
+  } catch (err) {
+    console.error("Share error:", err);
+    alert("Error generating share link");
+  }
 };
 
 // Initial load
