@@ -36,6 +36,12 @@
 .file-actions button {
   padding: 6px 10px;
   border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  background: white;
+}
+.file-actions button:hover {
+  background: #eee;
 }
 </style>
 
@@ -51,78 +57,103 @@ import { API_BASE } from "/static/js/api.js";
 
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
+// Attach functions to window object so inline onclick="" can find them
+window.downloadFile = (id) => {
+  const token = localStorage.getItem("token");
+  // If download requires auth, usually handled via a temporary link or attachment
+  window.open(`${API_BASE}/api/download/${id}/?token=${token}`);
+};
+
+window.shareFile = async (id) => {
+  const token = localStorage.getItem("token");
+  try {
+    // UPDATED ENDPOINT: Using the GET /api/share/<id>/ structure
+    const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+      method: "GET", // Most Django/FastAPI share creators use GET or a specific POST path
+      headers: {
+        "Authorization": token
+      }
+    });
+
+    if (!res.ok) throw new Error("Share failed");
+
+    const data = await res.json();
+    
+    // Construct the full URL (handling relative vs absolute paths)
+    const sharePath = data.share_url || data.link || data.url;
+    const fullURL = sharePath.startsWith('http') 
+        ? sharePath 
+        : `https://dropvault-2.onrender.com${sharePath}`;
+
+    await navigator.clipboard.writeText(fullURL);
+    alert("🔗 Share link copied to clipboard!\n" + fullURL);
+  } catch (err) {
+    console.error(err);
+    alert("Error: Could not create share link. Check if the file is already shared or endpoint is correct.");
+  }
+};
+
+window.deleteFile = async (id) => {
+  if (!confirm("Move this file to Trash?")) return;
+  const token = localStorage.getItem("token");
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/trash/move/`, {
+      method: "POST",
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ id })
+    });
+    
+    if(res.ok) {
+        alert("♻️ File moved to Trash");
+        loadMyFiles();
+    }
+  } catch (e) { alert("Delete failed"); }
+};
+
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
   if (!token) return location.href = "/login";
 
   const list = document.getElementById("your-files-list");
 
-  const res = await fetch(`${API_BASE}/api/list/`, {
-    headers: { "Authorization": token },
-    credentials: "include"
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/list/`, {
+      headers: { "Authorization": token }
+    });
 
-  const data = await res.json();
-  const files = data.files || data.your_files || [];
+    const data = await res.json();
+    const files = data.files || data.your_files || data; // Handle array or object
 
-  list.innerHTML = "";
+    list.innerHTML = "";
 
-  if (!files.length) {
-    list.innerHTML = "<li>No files uploaded yet</li>";
-    return;
+    if (!Array.isArray(files) || !files.length) {
+      list.innerHTML = "<li>No files uploaded yet</li>";
+      return;
+    }
+
+    files.forEach(f => {
+      list.innerHTML += `
+        <li class="file-item">
+          <img class="file-icon" src="${FILE_ICON}">
+          <span>${f.filename}</span>
+          <div class="file-actions">
+            <button onclick="downloadFile('${f.id}')" title="Download">⬇️</button>
+            <button onclick="shareFile('${f.id}')" title="Share">🔗</button>
+            <button onclick="deleteFile('${f.id}')" title="Delete">🗑</button>
+          </div>
+        </li>
+      `;
+    });
+  } catch (err) {
+    list.innerHTML = "<li>Error loading files</li>";
   }
-
-  files.forEach(f => {
-    list.innerHTML += `
-      <li class="file-item">
-        <img class="file-icon" src="${FILE_ICON}">
-        <span>${f.filename}</span>
-        <div class="file-actions">
-          <button onclick="downloadFile('${f.id}')">⬇️</button>
-          <button onclick="shareFile('${f.id}')">🔗</button>
-          <button onclick="deleteFile('${f.id}')">🗑</button>
-        </div>
-      </li>
-    `;
-  });
 }
 
-window.downloadFile = (id) => {
-  window.open(`${API_BASE}/api/download/${id}/`);
-};
-
-window.shareFile = async (id) => {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/files/share/`, {
-    method: "POST",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ file_id: id })
-  });
-  const data = await res.json();
-  navigator.clipboard.writeText(API_BASE + data.share_url);
-  alert("🔗 Share link copied!");
-};
-
-window.deleteFile = async (id) => {
-  if (!confirm("Move this file to Trash?")) return;
-
-  const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/trash/move/`, {
-    method: "POST",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ id })
-  });
-
-  alert("♻️ File moved to Trash");
-  loadMyFiles();
-};
-
+// Start loading
 loadMyFiles();
 </script>
 
