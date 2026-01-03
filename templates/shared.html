@@ -1,69 +1,70 @@
-{% extends 'base.html' %}
-{% block content %}
-
-<div class="shared-wrapper">
-  <h1 class="shared-title">Shared Files</h1>
-  <p class="shared-subtitle">Files you have shared</p>
-
-  <table class="shared-table">
-    <thead>
-      <tr>
-        <th>Filename</th>
-        <th>Expiry</th>
-        <th>Status</th>
-        <th>Link</th>
-      </tr>
-    </thead>
-    <tbody id="shared-list">
-      <tr><td colspan="4">Loading...</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
+<script>
+const API_BASE = "https://dropvault-2.onrender.com";
 
 async function loadSharedFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/files/shared/`, {
-    headers: { "Authorization": token }
-  });
-
-  const data = await res.json();
-  const list = document.getElementById("shared-list");
-  list.innerHTML = "";
-
-  const shared = data.shared || [];
-
-  if (!shared.length) {
-    list.innerHTML = "<tr><td colspan='4'>No shared files</td></tr>";
-    return;
+  if (!token) {
+    alert("Please login to continue");
+    return window.location.href = "/login";
   }
 
-  shared.forEach(f => {
-    const exp = f.expiry ? new Date(f.expiry).toLocaleString() : "-";
-    list.innerHTML += `
-      <tr>
-        <td>${f.filename}</td>
-        <td>${exp}</td>
-        <td>${new Date(f.expiry) > new Date() ? "Active" : "Expired"}</td>
-        <td>
-          <button onclick="copyLink('${API_BASE + f.share_url}')">Copy</button>
-        </td>
-      </tr>
-    `;
-  });
+  /*
+    ⚠️ Backend does NOT provide a shared-files LIST endpoint.
+    So this page loads empty by design.
+    Shared links are generated per-file using /api/share/<id>/
+  */
+  const list = document.getElementById("shared-list");
+  list.innerHTML = `
+    <tr>
+      <td colspan="4" style="text-align:center;">
+        Click "Share" from My Files to generate links
+      </td>
+    </tr>
+  `;
 }
 
-window.copyLink = (url) => {
-  navigator.clipboard.writeText(url);
-  alert("🔗 Link Copied!");
+window.getShare = async (id) => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+      method: "GET",
+      headers: {
+        "Authorization": token   // ✅ REQUIRED (no Bearer)
+      }
+    });
+
+    if (res.status === 401) {
+      alert("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      return window.location.href = "/login";
+    }
+
+    if (!res.ok) {
+      alert("Failed to generate share link");
+      return;
+    }
+
+    const data = await res.json();
+    console.log("SHARE RESPONSE:", data);
+
+    if (!data.share_url) {
+      alert("Share URL not returned by server");
+      return;
+    }
+
+    const fullLink = data.share_url.startsWith("http")
+      ? data.share_url
+      : `${API_BASE}${data.share_url}`;
+
+    navigator.clipboard.writeText(fullLink);
+    alert("🔗 Link Copied!");
+  } catch (err) {
+    console.error("Share error:", err);
+    alert("Error generating share link");
+  }
 };
 
 loadSharedFiles();
 </script>
-
-{% endblock %}
-
