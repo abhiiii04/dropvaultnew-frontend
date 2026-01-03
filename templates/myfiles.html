@@ -2,61 +2,32 @@
 {% block content %}
 
 <style>
-/* Page Layout */
 .files-wrapper {
   max-width: 750px;
   margin: 40px auto;
   padding: 10px 20px;
 }
-
-/* Section Title */
 .section-title {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 25px;
 }
-
-/* Subtitles (Your Files, Shared Files, Folders) */
-.sub-heading {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 25px 0 15px 0;
-}
-
-/* List Layout */
-.file-list, .folder-list {
+.file-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 25px 0;
 }
-
-.file-item, .folder-item {
+.file-item {
   display: flex;
   align-items: center;
   background: #f3f3f8;
   padding: 12px 16px;
   border-radius: 10px;
   margin-bottom: 12px;
-  cursor: pointer;
-  transition: 0.2s ease;
 }
-
-.file-item:hover, .folder-item:hover {
-  background: #eaeaf5;
-}
-
-/* Icons */
-.file-icon, .folder-icon {
+.file-icon {
   width: 28px;
   margin-right: 14px;
 }
-
-/* Text */
-.file-name, .folder-name {
-  font-size: 16px;
-  font-weight: 500;
-}
-/* Action buttons container */
 .file-actions {
   margin-left: auto;
   display: flex;
@@ -68,16 +39,10 @@
 }
 </style>
 
-
 <div class="files-wrapper">
   <h1 class="section-title">My Files</h1>
-
-  <h2 class="sub-heading">Your Files</h2>
-  <ul class="file-list" id="your-files-list"><li>Loading...</li></ul>
-
-  <h2 class="sub-heading">Shared Files</h2>
-  <ul class="file-list" id="shared-files-list"><li>Loading...</li></ul>
-
+  <ul class="file-list" id="your-files-list">
+    <li>Loading...</li>
   </ul>
 </div>
 
@@ -87,256 +52,74 @@ import { API_BASE } from "/static/js/api.js";
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
 async function loadMyFiles() {
-    const token = localStorage.getItem("token");
-    // Try token-based auth first; if no token, allow session-cookie auth
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
-    const yourList = document.getElementById("your-files-list");
-    const sharedList = document.getElementById("shared-files-list");
+  const list = document.getElementById("your-files-list");
 
-    try {
-      // Always include credentials so session-cookie auth works; include token header when present
-      const fetchOpts = { headers: {}, credentials: 'include' };
-      if (token) fetchOpts.headers["Authorization"] = token;
+  const res = await fetch(`${API_BASE}/api/list/`, {
+    headers: { "Authorization": token },
+    credentials: "include"
+  });
 
-      const res = await fetch(`${API_BASE}/api/list/`, fetchOpts);
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch (_) { data = { raw: text } }
+  const data = await res.json();
+  const files = data.files || data.your_files || [];
 
-      // If API replies that login is required, redirect to login
-      if (data && data.login_required) {
-        alert(data.message || 'Please login to continue');
-        return window.location.href = '/login';
-      }
+  list.innerHTML = "";
 
-      // Normalize files: API may return multiple shapes
-      let files = [];
-      let shared = [];
-      if (Array.isArray(data)) {
-        files = data;
-      } else if (data) {
-        if (Array.isArray(data.files)) files = data.files;
-        if (Array.isArray(data.your_files)) files = data.your_files;
-        if (Array.isArray(data.yourFiles)) files = data.yourFiles;
+  if (!files.length) {
+    list.innerHTML = "<li>No files uploaded yet</li>";
+    return;
+  }
 
-        if (Array.isArray(data.shared_files)) shared = data.shared_files;
-        if (Array.isArray(data.sharedFiles)) shared = data.sharedFiles;
-        if (Array.isArray(data.shared)) shared = data.shared;
-      }
-
-      if (!files.length && !shared.length) {
-        yourList.innerHTML = "<li>⚠ Error: unexpected response from server</li>";
-        console.error('Unexpected files response', data);
-        return;
-      }
-
-      yourList.innerHTML = "";
-      files.forEach(f => {
-        // try to use known fields for download/share
-        const slug = f.slug || f.share_slug || f.short || '';
-        const download_url = f.download_url || f.url || '';
-        yourList.innerHTML += `
-          <li class="file-item">
-            <img class="file-icon" src="${FILE_ICON}">
-            <span class="file-name">${f.filename}</span>
-            <div class="file-actions">
-              <button type="button" onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
-              <button type="button" onclick="shareFile('${f.id}')">🔗</button>
-              <button type="button" onclick="deleteFile('${f.id}')">🗑</button>
-            </div>
-          </li>
-        `;
-      });
-      // populate shared list
-      sharedList.innerHTML = "";
-      shared.forEach(f => {
-        const slug = f.slug || f.share_slug || f.short || '';
-        const download_url = f.download_url || f.url || '';
-        sharedList.innerHTML += `
-          <li class="file-item">
-            <img class="file-icon" src="${FILE_ICON}">
-            <span class="file-name">${f.filename}</span>
-            <div class="file-actions">
-              <button type="button" onclick="downloadFile('${f.id}','${slug}','${download_url}')">⬇️</button>
-              <button type="button" onclick="shareFile('${f.id}')">🔗</button>
-            </div>
-          </li>
-        `;
-      });
-
-    } catch (err) {
-      yourList.innerHTML = "<li>⚠ Error fetching files</li>";
-      console.error('loadMyFiles error', err);
-    }
+  files.forEach(f => {
+    list.innerHTML += `
+      <li class="file-item">
+        <img class="file-icon" src="${FILE_ICON}">
+        <span>${f.filename}</span>
+        <div class="file-actions">
+          <button onclick="downloadFile('${f.id}')">⬇️</button>
+          <button onclick="shareFile('${f.id}')">🔗</button>
+          <button onclick="deleteFile('${f.id}')">🗑</button>
+        </div>
+      </li>
+    `;
+  });
 }
 
-window.downloadFile = async (id, slug, url) => {
-  // Prefer explicit download URL from API, then slug-based shared link
-  if (url && url.length) return window.open(url);
-  if (slug && slug.length) return window.open(`${API_BASE}/s/${slug}/download/`);
-
-  // Fallback: try the API file-download endpoint used by the backend
-  const token = localStorage.getItem("token");
-  const opts = { method: 'GET', credentials: 'include', headers: {} };
-  if (token) opts.headers['Authorization'] = token;
-
-  try {
-    // Try multiple possible endpoints in sequence until one succeeds
-    const candidates = [];
-    if (slug) candidates.push(`${API_BASE}/s/${encodeURIComponent(slug)}/download/`);
-    candidates.push(`${API_BASE}/api/download/${id}/`);
-    candidates.push(`${API_BASE}/api/files/download/${id}/`);
-    candidates.push(`${API_BASE}/api/files/get/${id}/`);
-    candidates.push(`${API_BASE}/files/download/${id}/`);
-    candidates.push(`${API_BASE}/download/${id}/`);
-
-    console.log('downloadFile candidates:', candidates);
-
-    for (const candidate of candidates) {
-      try {
-        const r = await fetch(candidate, opts);
-        // If redirected, follow redirect in new tab/window
-        if (r.redirected) return window.open(r.url);
-
-        // If unauthorized, ask user to login
-        if (r.status === 401) {
-          alert('Unauthorized. Please login again.');
-          return window.location.href = '/login';
-        }
-
-        // Not found -> try next candidate
-        if (r.status === 404) {
-          console.warn('candidate 404', candidate);
-          continue;
-        }
-
-        if (!r.ok) {
-          // other non-OK statuses -> show message
-          const txt = await r.text();
-          console.warn('Download candidate failed:', candidate, r.status, txt);
-          continue;
-        }
-
-        // If this response is JSON (error or metadata), try to parse and continue
-        const ct = r.headers.get('content-type') || '';
-        if (ct.includes('application/json')) {
-          const jt = await r.json();
-          // If JSON contains redirect URL, open it
-          if (jt && jt.url) return window.open(jt.url);
-          // otherwise try next
-          continue;
-        }
-
-        // Otherwise assume binary and download blob
-        const blob = await r.blob();
-        const disposition = r.headers.get('content-disposition') || '';
-        let filename = `file-${id}`;
-        const m = /filename="?([^";]+)"?/.exec(disposition);
-        if (m && m[1]) filename = m[1];
-
-        const urlObj = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = urlObj;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(urlObj);
-        return;
-      } catch (e) {
-        console.warn('Candidate fetch error', candidate, e);
-        continue;
-      }
-    }
-    // As a last resort, try to create a share link via the share API and open it
-    try {
-      const token = localStorage.getItem("token");
-      const opts = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: id }) };
-      if (token) opts.headers['Authorization'] = token;
-      const r = await fetch(`${API_BASE}/api/files/share/`, opts);
-      if (r.ok) {
-        const j = await r.json();
-        const share = j.share_url || j.url || j.download_url || j.link;
-        if (share) return window.open(share.startsWith('http') ? share : (API_BASE + share));
-      }
-    } catch (e) {
-      console.warn('share fallback failed', e);
-    }
-
-    alert('Download failed: file not found on server (tried multiple endpoints).');
-  } catch (err) {
-    console.error('downloadFile error', err);
-    alert('Download failed; see console for details');
-  }
+window.downloadFile = (id) => {
+  window.open(`${API_BASE}/api/download/${id}/`);
 };
+
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const opts = { method: "POST", headers: { "Content-Type": "application/json" }, credentials: 'include', body: JSON.stringify({ file_id: id }) };
-  if (token) opts.headers["Authorization"] = token;
-  const r = await fetch(`${API_BASE}/api/files/share/`, opts);
-  const d = await r.json();
-  alert("Share Link: " + (d.share_url ? (API_BASE + d.share_url) : (d.url || '')));
+  const res = await fetch(`${API_BASE}/api/files/share/`, {
+    method: "POST",
+    headers: {
+      "Authorization": token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ file_id: id })
+  });
+  const data = await res.json();
+  navigator.clipboard.writeText(API_BASE + data.share_url);
+  alert("🔗 Share link copied!");
 };
+
 window.deleteFile = async (id) => {
-  if (!confirm("Move this file to Trash? You can restore it later.")) return;
+  if (!confirm("Move this file to Trash?")) return;
+
   const token = localStorage.getItem("token");
+  await fetch(`${API_BASE}/api/trash/move/`, {
+    method: "POST",
+    headers: {
+      "Authorization": token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id })
+  });
 
-  // First try the standard delete endpoint without permanent flag — many backends
-  // use this as a soft-delete (move to trash).
-  try {
-    const res = await fetch(`${API_BASE}/api/delete/${id}/`, { method: 'DELETE', credentials: 'include', headers: { 'Authorization': token } });
-    if (res.ok) {
-      alert('♻️ File moved to Trash');
-      loadMyFiles();
-      return;
-    }
-    // if 404 or not found, fallback to other possible trash endpoints below
-    const txt = await res.text();
-    console.warn('DELETE /api/delete/ response:', res.status, txt);
-  } catch (e) {
-    console.warn('Soft-delete attempt failed', e);
-  }
-
-  // Try known trash endpoints if delete didn't succeed
-  const candidates = [
-    { url: `${API_BASE}/api/trash/move/`, method: 'POST', bodyKey: 'id' },
-    { url: `${API_BASE}/api/trash/`, method: 'POST', bodyKey: 'id' },
-    { url: `${API_BASE}/api/trash/add/`, method: 'POST', bodyKey: 'id' },
-    { url: `${API_BASE}/api/trash/move_file/`, method: 'POST', bodyKey: 'file_id' },
-  ];
-
-  let moved = false;
-  for (const c of candidates) {
-    try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = token;
-      const body = c.bodyKey === 'file_id' ? JSON.stringify({ file_id: id }) : JSON.stringify({ id });
-      const res = await fetch(c.url, { method: c.method, credentials: 'include', headers, body });
-      if (res.ok) { moved = true; break; }
-      // try next candidate on non-ok
-    } catch (e) {
-      console.warn('trash candidate error', c.url, e);
-      continue;
-    }
-  }
-
-  if (!moved) {
-    // fallback to permanent delete if trash endpoints not available
-    try {
-      const headers = {};
-      if (token) headers['Authorization'] = token;
-      await fetch(`${API_BASE}/api/delete/${id}/?permanent=true`, { method: 'DELETE', credentials: 'include', headers });
-      alert('File permanently deleted (trash not available).');
-      loadMyFiles();
-      return;
-    } catch (e) {
-      console.error('Fallback delete failed', e);
-      alert('Failed to delete file. See console for details.');
-      return;
-    }
-  }
-
-  alert('♻️ File moved to Trash');
+  alert("♻️ File moved to Trash");
   loadMyFiles();
 };
 
@@ -344,4 +127,3 @@ loadMyFiles();
 </script>
 
 {% endblock %}
-
