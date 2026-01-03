@@ -145,12 +145,14 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
+const SHARED_API_BASE = "https://dropvault-2.onrender.com/api/shared";
+
 async function loadSharedFiles() {
     const token = localStorage.getItem("token");
     if(!token) return location.href = "/login";
 
     const list = document.getElementById("shared-list");
-    const res = await fetch(`${API_BASE}/files/shared/`, {
+    const res = await fetch(`${SHARED_API_BASE}/files/shared/`, {
       headers:{ "Authorization": token },
       credentials: 'include'
     });
@@ -188,26 +190,3 @@ window.getShare = async (id) => {
     const r = await fetch(`${API_BASE}/api/share/${id}/`, opts);
     if (!r.ok) {
       alert('Failed to create/get share link: ' + r.status);
-      return;
-    }
-    const j = await r.json();
-    const share = j.share_url || j.url || j.link;
-    if (!share) {
-      alert('Share URL not returned by server');
-      return;
-    }
-    const full = share.startsWith('http') ? share : (API_BASE + share);
-    navigator.clipboard.writeText(full);
-    alert('🔗 Link Copied!');
-  } catch (e) {
-    console.error('getShare error', e);
-    alert('Error creating share link');
-  }
-};
-
-{% endblock %}
-
-loadSharedFiles();
-</script>
-
-
