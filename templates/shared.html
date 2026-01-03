@@ -1,144 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<style>
-/* Page Layout */
-.shared-wrapper {
-  max-width: 900px;
-  margin: 2px auto;
-  padding: 60px 80px;
-}
-
-/* Title */
-.shared-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.shared-subtitle {
-  color: #7b7b7b;
-  margin-bottom: 20px;
-}
-
-/* Breadcrumb */
-.breadcrumb {
-  color: #8a88c0;
-  font-size: 15px;
-  margin-bottom: 20px;
-}
-
-/* Tabs */
-.shared-tabs {
-  display: flex;
-  gap: 25px;
-  margin-bottom: 25px;
-  border-bottom: 1px solid #e5e5e5;
-  padding-bottom: 10px;
-}
-
-.shared-tab {
-  font-size: 15px;
-  padding-bottom: 6px;
-  cursor: pointer;
-  color: #7b7b7b;
-}
-
-.shared-tab.active {
-  color: #4a4ac7;
-  border-bottom: 2px solid #4a4ac7;
-  font-weight: 600;
-}
-
-/* Search Bar */
-.search-box {
-  background: #f2f2f8;
-  border-radius: 10px;
-  padding: 12px 15px;
-  margin-bottom: 25px;
-  display: flex;
-  align-items: center;
-}
-
-.search-box input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 15px;
-}
-
-/* Table */
-.shared-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  font-size: 15px;
-}
-
-.shared-table thead {
-  background: #fafafa;
-}
-
-.shared-table th, 
-.shared-table td {
-  padding: 14px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.shared-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* Status Badges */
-.badge {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.badge-active {
-  background: #b8ffcc;
-  color: #0e8c3a;
-}
-
-.badge-expiring {
-  background: #fff1a6;
-  color: #8c6f00;
-}
-
-/* "Modify" link */
-.modify-link {
-  color: #4a4ac7;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* Copy button hidden for new UI (modern look uses click-to-copy) */
-.copy-btn {
-  padding: 4px 10px;
-  font-size: 13px;
-}
-
-</style>
-
 <div class="shared-wrapper">
   <h1 class="shared-title">Shared Files</h1>
-  <p class="shared-subtitle">Files shared by you or with you.</p>
-
-  <div class="search-box">
-    <input id="sharedSearch" placeholder="Search shared files...">
-  </div>
+  <p class="shared-subtitle">Files you have shared</p>
 
   <table class="shared-table">
     <thead>
-      <tr><th>Filename</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+      <tr>
+        <th>Filename</th>
+        <th>Expiry</th>
+        <th>Status</th>
+        <th>Link</th>
+      </tr>
     </thead>
-    <tbody id="shared-list"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
+    <tbody id="shared-list">
+      <tr><td colspan="4">Loading...</td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -146,67 +24,46 @@
 import { API_BASE } from "/static/js/api.js";
 
 async function loadSharedFiles() {
-    const token = localStorage.getItem("token");
-    if(!token) return location.href = "/login";
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
-    const list = document.getElementById("shared-list");
-    const res = await fetch(`${API_BASE}/files/shared/`, {
-      headers:{ "Authorization": token },
-      credentials: 'include'
-    });
+  const res = await fetch(`${API_BASE}/files/shared/`, {
+    headers: { "Authorization": token }
+  });
 
-    const data = await res.json();
-    list.innerHTML = "";
+  const data = await res.json();
+  const list = document.getElementById("shared-list");
+  list.innerHTML = "";
 
-    // Support API returning { shared: [...] } or an array directly
-    const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+  const shared = data.shared || [];
 
-    items.forEach(s=>{
-        let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
-        list.innerHTML += `
-          <tr class="shared-row">
-            <td>${s.filename}</td>
-            <td>${exp}</td>
-            <td><span class="badge">${ s.expiry && new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
-            <td><span class="modify-link" onclick="getShare('${s.id}')">Copy</span></td>
-          </tr>
-        `;
-    });
+  if (!shared.length) {
+    list.innerHTML = "<tr><td colspan='4'>No shared files</td></tr>";
+    return;
+  }
+
+  shared.forEach(f => {
+    const exp = f.expiry ? new Date(f.expiry).toLocaleString() : "-";
+    list.innerHTML += `
+      <tr>
+        <td>${f.filename}</td>
+        <td>${exp}</td>
+        <td>${new Date(f.expiry) > new Date() ? "Active" : "Expired"}</td>
+        <td>
+          <button onclick="copyLink('${API_BASE + f.share_url}')">Copy</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
-window.copyLink = (url)=>{
-    navigator.clipboard.writeText(url);
-    alert("🔗 Link Copied!");
+window.copyLink = (url) => {
+  navigator.clipboard.writeText(url);
+  alert("🔗 Link Copied!");
 };
-
-window.getShare = async (id) => {
-  const token = localStorage.getItem('token');
-  const opts = { method: 'GET', credentials: 'include', headers: {} };
-  if (token) opts.headers['Authorization'] = token;
-
-  try {
-    const r = await fetch(`${API_BASE}/api/share/${id}/`, opts);
-    if (!r.ok) {
-      alert('Failed to create/get share link: ' + r.status);
-      return;
-    }
-    const j = await r.json();
-    const share = j.share_url || j.url || j.link;
-    if (!share) {
-      alert('Share URL not returned by server');
-      return;
-    }
-    const full = share.startsWith('http') ? share : (API_BASE + share);
-    navigator.clipboard.writeText(full);
-    alert('🔗 Link Copied!');
-  } catch (e) {
-    console.error('getShare error', e);
-    alert('Error creating share link');
-  }
-};
-
-{% endblock %}
 
 loadSharedFiles();
 </script>
+
+{% endblock %}
 
