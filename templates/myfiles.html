@@ -110,7 +110,7 @@ window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash?")) return;
 
   const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/trash/move/`, {
+  const res = await fetch(`${API_BASE}/trash/move/`, { // Corrected endpoint
     method: "POST",
     headers: {
       "Authorization": token,
@@ -119,8 +119,12 @@ window.deleteFile = async (id) => {
     body: JSON.stringify({ id })
   });
 
-  alert("♻️ File moved to Trash");
-  loadMyFiles();
+  if (res.ok) {
+    alert("♻️ File moved to Trash");
+    loadMyFiles();
+  } else {
+    alert("❌ Failed to move file to Trash");
+  }
 };
 
 loadMyFiles();
