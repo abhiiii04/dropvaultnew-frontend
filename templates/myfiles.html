@@ -93,7 +93,7 @@ window.downloadFile = (id) => {
 
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/files/share/`, {
+  const res = await fetch(`${API_BASE}/files/share/`, { // Corrected endpoint
     method: "POST",
     headers: {
       "Authorization": token,
@@ -101,9 +101,19 @@ window.shareFile = async (id) => {
     },
     body: JSON.stringify({ file_id: id })
   });
-  const data = await res.json();
-  navigator.clipboard.writeText(API_BASE + data.share_url);
-  alert("🔗 Share link copied!");
+
+  if (res.ok) {
+    const data = await res.json();
+    const shareUrl = data.share_url || data.url || data.link;
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      alert("🔗 Share link copied!");
+    } else {
+      alert("❌ Failed to retrieve share link");
+    }
+  } else {
+    alert("❌ Failed to share file");
+  }
 };
 
 window.deleteFile = async (id) => {
