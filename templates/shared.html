@@ -150,7 +150,7 @@ async function loadSharedFiles() {
     if(!token) return location.href = "/login";
 
     const list = document.getElementById("shared-list");
-    const res = await fetch(`${API_BASE}/files/shared/`, {
+    const res = await fetch(`${API_BASE}/api/shared/`, {
       headers:{ "Authorization": token },
       credentials: 'include'
     });
@@ -185,7 +185,7 @@ window.getShare = async (id) => {
   if (token) opts.headers['Authorization'] = token;
 
   try {
-    const r = await fetch(`${API_BASE}/api/share/${id}/`, opts);
+    const r = await fetch(`${API_BASE}/s/${id}/`, opts);
     if (!r.ok) {
       alert('Failed to create/get share link: ' + r.status);
       return;
