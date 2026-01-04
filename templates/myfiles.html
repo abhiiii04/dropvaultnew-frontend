@@ -93,7 +93,7 @@ window.downloadFile = (id) => {
 
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/files/share/`, { // Corrected endpoint
+  const res = await fetch(`${API_BASE}/api/files/share/`, {
     method: "POST",
     headers: {
       "Authorization": token,
@@ -101,26 +101,16 @@ window.shareFile = async (id) => {
     },
     body: JSON.stringify({ file_id: id })
   });
-
-  if (res.ok) {
-    const data = await res.json();
-    const shareUrl = data.share_url || data.url || data.link;
-    if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl);
-      alert("🔗 Share link copied!");
-    } else {
-      alert("❌ Failed to retrieve share link");
-    }
-  } else {
-    alert("❌ Failed to share file");
-  }
+  const data = await res.json();
+  navigator.clipboard.writeText(API_BASE + data.share_url);
+  alert("🔗 Share link copied!");
 };
 
 window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash?")) return;
 
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/delete/${id}/`, { // Corrected endpoint
+  await fetch(`${API_BASE}/api/trash/move/`, {
     method: "POST",
     headers: {
       "Authorization": token,
@@ -129,12 +119,8 @@ window.deleteFile = async (id) => {
     body: JSON.stringify({ id })
   });
 
-  if (res.ok) {
-    alert("♻️ File moved to Trash");
-    loadMyFiles();
-  } else {
-    alert("❌ Failed to move file to Trash");
-  }
+  alert("♻️ File moved to Trash");
+  loadMyFiles();
 };
 
 loadMyFiles();
