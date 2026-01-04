@@ -53,66 +53,115 @@ const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
-
-  const list = document.getElementById("your-files-list");
-
-  const res = await fetch(`${API_BASE}/api/list/`, {
-    headers: { "Authorization": token },
-    credentials: "include"
-  });
-
-  const data = await res.json();
-  const files = data.files || data.your_files || [];
-
-  list.innerHTML = "";
-
-  if (!files.length) {
-    list.innerHTML = "<li>No files uploaded yet</li>";
-    return;
+  if (!token) {
+    alert("⚠️ Session expired. Redirecting to login...");
+    return location.href = "/login";
   }
 
-  files.forEach(f => {
-    list.innerHTML += `
-      <li class="file-item">
-        <img class="file-icon" src="${FILE_ICON}">
-        <span>${f.filename}</span>
-        <div class="file-actions">
-          <button onclick="downloadFile('${f.id}')">⬇️</button>
-          <button onclick="shareFile('${f.id}')">🔗</button>
-          <button onclick="deleteFile('${f.id}')">🗑</button>
-        </div>
-      </li>
-    `;
-  });
+  const list = document.getElementById("your-files-list");
+  list.innerHTML = "<li>Loading...</li>";
+
+  try {
+    const res = await fetch(⁠ ${API_BASE}/api/list/ ⁠, {
+      method: "GET",
+      headers: {
+        "Authorization": ⁠ Bearer ${token} ⁠
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(⁠ HTTP ${res.status} ⁠);
+    }
+
+    const data = await res.json();
+    const files = data.files || data.your_files || [];
+
+    list.innerHTML = "";
+
+    if (!files.length) {
+      list.innerHTML = "<li>No files uploaded yet</li>";
+      return;
+    }
+
+    files.forEach(f => {
+      list.innerHTML += `
+        <li class="file-item">
+          <img class="file-icon" src="${FILE_ICON}" alt="File">
+          <span>${f.filename}</span>
+          <div class="file-actions">
+            <button onclick="downloadFile('${f.id}')">⬇️</button>
+            <button onclick="shareFile('${f.id}')">🔗</button>
+            <button onclick="deleteFile('${f.id}')">🗑</button>
+          </div>
+        </li>
+      `;
+    });
+  } catch (err) {
+    console.error("Load files failed:", err);
+    list.innerHTML = ⁠ <li>❌ Failed to load files — check console</li> ⁠;
+  }
 }
 
+// --- Global functions (required for inline onclick) ---
 window.downloadFile = (id) => {
-  window.open(`${API_BASE}/api/download/${id}/`);
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
+  // Redirect with token in header is not possible → let backend handle auth via cookie or allow unauth download for owner
+  // If your /api/download/ requires auth, use fetch + blob download instead:
+  fetch(⁠ ${API_BASE}/api/download/${id}/ ⁠, {
+    headers: { "Authorization": ⁠ Bearer ${token} ⁠ }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error(⁠ Download failed: ${res.status} ⁠);
+    return res.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = ''; // backend should set Content-Disposition
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  })
+  .catch(err => {
+    console.error("Download error:", err);
+    alert("❌ Failed to download file");
+  });
 };
 
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/files/share/`, { // Corrected endpoint
-    method: "POST",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ file_id: id })
-  });
+  if (!token) return location.href = "/login";
 
-  if (res.ok) {
+  try {
+    const res = await fetch(⁠ ${API_BASE}/api/share/ ⁠, {
+      method: "POST",
+      headers: {
+        "Authorization": ⁠ Bearer ${token} ⁠,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ file_id: id })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("Share failed:", res.status, err);
+      throw new Error(⁠ HTTP ${res.status} ⁠);
+    }
+
     const data = await res.json();
     const shareUrl = data.share_url || data.url || data.link;
     if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl);
-      alert("🔗 Share link copied!");
+      await navigator.clipboard.writeText(shareUrl);
+      alert("🔗 Share link copied to clipboard!");
     } else {
-      alert("❌ Failed to retrieve share link");
+      alert("⚠️ Shared, but no link returned");
     }
-  } else {
-    alert("❌ Failed to share file");
+  } catch (err) {
+    console.error("Share error:", err);
+    alert("❌ Failed to generate share link");
   }
 };
 
@@ -120,23 +169,32 @@ window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash?")) return;
 
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/delete/${id}/`, { // Corrected endpoint
-    method: "DELETE",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ id })
-  });
+  if (!token) return location.href = "/login";
 
-  if (res.ok) {
+  try {
+    const res = await fetch(⁠ ${API_BASE}/api/delete/${id}/ ⁠, {
+      method: "DELETE",
+      headers: {
+        "Authorization": ⁠ Bearer ${token} ⁠
+      }
+      // ✅ No body, correct method, correct path
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("Delete failed:", res.status, err);
+      throw new Error(⁠ HTTP ${res.status} ⁠);
+    }
+
     alert("♻️ File moved to Trash");
-    loadMyFiles();
-  } else {
+    loadMyFiles(); // refresh
+  } catch (err) {
+    console.error("Delete error:", err);
     alert("❌ Failed to move file to Trash");
   }
 };
 
+// Initial load
 loadMyFiles();
 </script>
 
