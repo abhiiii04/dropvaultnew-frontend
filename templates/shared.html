@@ -143,35 +143,67 @@
 </div>
 
 <script type="module">
-import { API_BASE } from "/static/js/api.js";
+import { API_BASE, SHARED_API_BASE, CORS_PROXY } from "/static/js/api.js";
 
 async function loadSharedFiles() {
     const token = localStorage.getItem("token");
     if(!token) return location.href = "/login";
 
     const list = document.getElementById("shared-list");
-    const res = await fetch(`${API_BASE}/api/shared/`, {
-      headers:{ "Authorization": token },
-      credentials: 'include'
-    });
+    const opts = { headers:{ "Authorization": token }, credentials: 'include' };
 
-    const data = await res.json();
-    list.innerHTML = "";
+    try {
+      let res = await fetch(`${SHARED_API_BASE}/files/shared/`, opts);
 
-    // Support API returning { shared: [...] } or an array directly
-    const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+      // If direct fetch fails due to CORS/network, try proxy if configured
+      if (!res || !res.ok) {
+        // If proxy configured, attempt via proxy
+        if (CORS_PROXY) {
+          try {
+            res = await fetch(CORS_PROXY + `${SHARED_API_BASE}/files/shared/`, opts);
+          } catch (e) {
+            // fall through to error handler below
+            console.warn('Proxy attempt failed', e);
+          }
+        }
+      }
 
-    items.forEach(s=>{
-        let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
-        list.innerHTML += `
-          <tr class="shared-row">
-            <td>${s.filename}</td>
-            <td>${exp}</td>
-            <td><span class="badge">${ s.expiry && new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
-            <td><span class="modify-link" onclick="getShare('${s.id}')">Copy</span></td>
-          </tr>
-        `;
-    });
+      if (!res) throw new Error('Network request failed');
+
+      if (!res.ok) {
+        // Try to extract server message when possible
+        let errText = 'Failed to load shared files';
+        try { const err = await res.json(); errText = err.message || err.error || errText; } catch(_) { }
+        alert(`❌ ${errText} (status: ${res.status})`);
+        return;
+      }
+
+      const data = await res.json();
+      list.innerHTML = "";
+
+      // Support API returning { shared: [...] } or an array directly
+      const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+
+      items.forEach(s=>{
+          let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
+          list.innerHTML += `
+            <tr class="shared-row">
+              <td>${s.filename}</td>
+              <td>${exp}</td>
+              <td><span class="badge">${ s.expiry && new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
+              <td><span class="modify-link" onclick="getShare('${s.id}')">Copy</span></td>
+            </tr>
+          `;
+      });
+    } catch (err) {
+      // Network/CORS errors surface here as TypeError: Failed to fetch
+      console.error('loadSharedFiles error', err);
+      if (err.message && err.message.includes('Failed to fetch')) {
+        alert('Network or CORS error: the browser blocked the request. The backend must allow your origin (add Access-Control-Allow-Origin header) or enable CORS.');
+      } else {
+        alert('Unexpected error loading shared files. See console for details.');
+      }
+    }
 }
 
 window.copyLink = (url)=>{
@@ -205,10 +237,7 @@ window.getShare = async (id) => {
   }
 };
 
-
-
 loadSharedFiles();
 </script>
 
 {% endblock %}
-
