@@ -1,12 +1,12 @@
-// ===============================
-// 🌐 API BASE URL (Render Backend)
-// ===============================
-const API_BASE = "https://dropvault-2.onrender.com";  // ✅ Update for live deployment
+
+// API BASE URL (Render Backend)
+
+const API_BASE = "https://dropvault-2.onrender.com";  
 
 
-// ===============================
-// 📌 Copy Share Link
-// ===============================
+
+//  Copy Share Link
+
 function copyLink(id) {
   const input = document.getElementById(id);
   if (!input) return;
@@ -17,9 +17,9 @@ function copyLink(id) {
 }
 
 
-// ===============================
-// ⏳ Countdown Timer
-// ===============================
+
+//  Countdown Timer
+
 function startCountdown() {
   const timers = document.querySelectorAll(".countdown");
   timers.forEach(timer => {
@@ -39,9 +39,9 @@ function startCountdown() {
 }
 
 
-// ===============================
-// 📊 Progress Bar Animation
-// ===============================
+
+//  Progress Bar Animation
+
 function animateProgressBars() {
   document.querySelectorAll(".progress-bar").forEach(bar => {
     const width = bar.style.width;
@@ -54,9 +54,9 @@ function animateProgressBars() {
 }
 
 
-// ===============================
-// 🚀 Upload File API → Flask Backend
-// ===============================
+
+//  Upload File API → Flask Backend
+
 document.addEventListener("DOMContentLoaded", () => {
   const uploadForm = document.getElementById("uploadForm");
   if (uploadForm) {
@@ -87,7 +87,7 @@ async function uploadFileAPI() {
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: "POST",
       headers: {
-        "Authorization": localStorage.getItem("token") // user id stored after login
+        "Authorization": localStorage.getItem("token") 
       },
       body: formData
     });
@@ -107,15 +107,15 @@ async function uploadFileAPI() {
     }
 
   } catch (error) {
-    msg.textContent = "🚨 Server Error. Try again.";
+    msg.textContent = " Server Error. Try again.";
     msg.style.color = "red";
   }
 }
 
 
-// ===============================
-// 🔑 LOGIN FUNCTION (POST to Backend)
-// ===============================
+
+//  LOGIN FUNCTION (POST to Backend)
+
 async function loginUser() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -130,10 +130,10 @@ async function loginUser() {
   const data = await res.json();
 
   if (res.ok) {
-    localStorage.setItem("token", data.token); // store user id as token
+    localStorage.setItem("token", data.token); 
     msg.textContent = "✅ Login successful!";
     msg.style.color = "green";
-    window.location.href = "/dashboard.html"; // redirect to dashboard
+    window.location.href = "/dashboard.html"; 
   } else {
     msg.textContent = "❌ " + data.message;
     msg.style.color = "red";

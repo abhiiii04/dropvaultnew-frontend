@@ -41,7 +41,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     console.log("REGISTER RESPONSE:", data);
 
     if (res.ok) {
-      alert("🎉 Registration successful! Please login.");
+      alert("Registration successful! Please login.");
       window.location.href = "/login";
     } else {
       alert(data.message || "❌ Email already exists.");
