@@ -73,6 +73,40 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     alert(data.message || "❌ Login failed. Try again.");
   } catch (err) {
     console.error('Login request failed:', err);
+    // Detect typical CORS / network failure and offer guidance + optional proxy retry
+    if (err && err.message && err.message.includes('Failed to fetch')) {
+      const tryProxy = confirm('Network or CORS error occurred when contacting the API.\n\nThis usually means the backend is not allowing your frontend origin (missing Access-Control-Allow-Origin header).\n\nWould you like to retry the request via a temporary CORS proxy (only for testing)?');
+      if (tryProxy) {
+        const PROXY = 'https://cors-anywhere.herokuapp.com/';
+        try {
+          const proxyRes = await fetch(PROXY + `${API_BASE}/api/login/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            // Note: cookies may not be forwarded through some proxies
+          });
+          const text2 = await proxyRes.text();
+          let data2;
+          try { data2 = JSON.parse(text2); } catch (_) { data2 = { raw: text2 }; }
+          if (proxyRes.ok && (data2.token || data2.sessionid || data2.status === 'success')) {
+            if (data2.token) localStorage.setItem('token', data2.token);
+            alert('Login successful (via proxy)');
+            window.location.href = '/dashboard';
+            return;
+          }
+          alert(data2.message || 'Login failed (proxy).');
+          return;
+        } catch (pe) {
+          console.error('Proxy retry failed', pe);
+          alert('Proxy retry failed. Best fix: enable CORS on backend by adding Access-Control-Allow-Origin for your frontend origin.');
+          return;
+        }
+      }
+
+      alert('Network/CORS error. The server must allow your origin by sending Access-Control-Allow-Origin, or use a backend proxy. See console for details.');
+      return;
+    }
+
     alert('Network error. See console for details.');
   }
 });

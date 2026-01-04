@@ -153,14 +153,14 @@ async function loadSharedFiles() {
     const opts = { headers:{ "Authorization": token }, credentials: 'include' };
 
     try {
-      let res = await fetch(`${SHARED_API_BASE}/files/shared/`, opts);
+      let res = await fetch(`${SHARED_API_BASE}/api/shared/`, opts);
 
       // If direct fetch fails due to CORS/network, try proxy if configured
       if (!res || !res.ok) {
         // If proxy configured, attempt via proxy
         if (CORS_PROXY) {
           try {
-            res = await fetch(CORS_PROXY + `${SHARED_API_BASE}/files/shared/`, opts);
+            res = await fetch(CORS_PROXY + `${SHARED_API_BASE}/api/shared/`, opts);
           } catch (e) {
             // fall through to error handler below
             console.warn('Proxy attempt failed', e);
