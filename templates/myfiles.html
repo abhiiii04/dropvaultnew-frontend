@@ -1,4 +1,4 @@
-My files {% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block content %}
 
 <style>
@@ -51,9 +51,21 @@ import { API_BASE } from "/static/js/api.js";
 
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
+async function parseResponse(res) {
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+  if (data && data.login_required) {
+    alert(data.error || data.message || "Please login to continue");
+    window.location.href = "/login?message=" + encodeURIComponent(data.error || data.message || "Please login to continue");
+    return { authError: true, data };
+  }
+  return { authError: false, ok: res.ok, status: res.status, data };
+}
+
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
+  if (!token) return window.location.href = "/login";
 
   const list = document.getElementById("your-files-list");
 
@@ -62,7 +74,15 @@ async function loadMyFiles() {
     credentials: "include"
   });
 
-  const data = await res.json();
+  const parsed = await parseResponse(res);
+  if (parsed.authError) return;
+  if (!parsed.ok) {
+    alert(parsed.data.message || "Failed to load files");
+    list.innerHTML = "<li>No files uploaded yet</li>";
+    return;
+  }
+
+  const data = parsed.data;
   const files = data.files || data.your_files || [];
 
   list.innerHTML = "";
@@ -93,38 +113,73 @@ window.downloadFile = (id) => {
 
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
-    method: "POST",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ file_id: id })
-  });
-  const data = await res.json();
-  navigator.clipboard.writeText(API_BASE + data.share_url);
-  alert("🔗 Share link copied!");
+  if (!token) {
+    window.location.href = "/login?message=" + encodeURIComponent("Please login to continue");
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+      method: "POST",
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ file_id: id }),
+      credentials: "include"
+    });
+
+    const parsed = await parseResponse(res);
+    if (parsed.authError) return;
+    if (!parsed.ok) { alert(parsed.data.message || "Failed to share file"); return; }
+
+    const data = parsed.data;
+    const shareUrl = data.share_url || data.url || data.link;
+    if (shareUrl) {
+      const fullUrl = shareUrl.startsWith('http') ? shareUrl : (API_BASE + shareUrl);
+      await navigator.clipboard.writeText(fullUrl);
+      alert("🔗 Share link copied!");
+    } else {
+      alert("❌ Failed to retrieve share link");
+    }
+  } catch (error) {
+    console.warn("Error sharing file:", error);
+    alert("❌ An unexpected error occurred while sharing the file.");
+  }
 };
 
 window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash?")) return;
-
   const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/trash/move/`, {
-    method: "POST",
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ id })
-  });
+  if (!token) {
+    window.location.href = "/login?message=" + encodeURIComponent("Please login to continue");
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/trash/move/`, {
+      method: "POST",
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ id }),
+      credentials: "include"
+    });
 
-  alert("♻️ File moved to Trash");
-  loadMyFiles();
+    const parsed = await parseResponse(res);
+    if (parsed.authError) return;
+    if (parsed.ok) {
+      alert("♻️ File moved to Trash");
+      loadMyFiles();
+    } else {
+      alert(parsed.data.message || "❌ Failed to move file to Trash");
+    }
+  } catch (error) {
+    console.warn("Error moving file to trash:", error);
+    alert("❌ An unexpected error occurred while moving the file to Trash.");
+  }
 };
 
 loadMyFiles();
 </script>
 
 {% endblock %}
-
