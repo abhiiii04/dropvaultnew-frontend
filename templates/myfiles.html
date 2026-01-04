@@ -51,158 +51,92 @@ import { API_BASE } from "/static/js/api.js";
 
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
-// 🔑 Helper: get JWT token (robust lookup)
-function getAuthToken() {
-  return (
-    localStorage.getItem("access") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("auth_token")
-  );
-}
-
-// 🚨 Helper: handle auth errors
-function handleAuthError() {
-  alert("⚠️ Session expired or invalid. Please log in again.");
-  localStorage.removeItem("access");
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("token");
-  location.href = "/login";
-}
-
-// 📥 Load files
 async function loadMyFiles() {
-  const token = getAuthToken();
-  if (!token) return handleAuthError();
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
   const list = document.getElementById("your-files-list");
-  list.innerHTML = "<li>Loading...</li>";
 
-  try {
-    const res = await fetch(`${API_BASE}/api/list/`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`  // ✅ Critical: Bearer prefix
-      }
-    });
+  const res = await fetch(`${API_BASE}/api/list/`, {
+    headers: { "Authorization": token },
+    credentials: "include"
+  });
 
-    if (res.status === 401) {
-      handleAuthError();
-      return;
-    }
+  const data = await res.json();
+  const files = data.files || data.your_files || [];
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+  list.innerHTML = "";
 
-    const data = await res.json();
-    const files = data.files || data.your_files || [];
-
-    list.innerHTML = files.length
-      ? files.map(f => `
-        <li class="file-item">
-          <img class="file-icon" src="${FILE_ICON}" alt="File">
-          <span>${f.filename}</span>
-          <div class="file-actions">
-            <button onclick="window.downloadFile('${f.id}')">⬇️</button>
-            <button onclick="window.shareFile('${f.id}')">🔗</button>
-            <button onclick="window.deleteFile('${f.id}')">🗑</button>
-          </div>
-        </li>
-      `).join('')
-      : "<li>No files uploaded yet</li>";
-
-  } catch (err) {
-    console.error("Load failed:", err);
-    list.innerHTML = `<li>❌ Failed to load files — check console</li>`;
+  if (!files.length) {
+    list.innerHTML = "<li>No files uploaded yet</li>";
+    return;
   }
+
+  files.forEach(f => {
+    list.innerHTML += `
+      <li class="file-item">
+        <img class="file-icon" src="${FILE_ICON}">
+        <span>${f.filename}</span>
+        <div class="file-actions">
+          <button onclick="downloadFile('${f.id}')">⬇️</button>
+          <button onclick="shareFile('${f.id}')">🔗</button>
+          <button onclick="deleteFile('${f.id}')">🗑</button>
+        </div>
+      </li>
+    `;
+  });
 }
 
-// 🌐 Expose functions globally (for inline onclick)
-window.downloadFile = async (id) => {
-  const token = getAuthToken();
-  if (!token) return handleAuthError();
-
-  try {
-    const res = await fetch(`${API_BASE}/api/download/${id}/`, {
-      method: "GET",
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-
-    if (res.status === 401) return handleAuthError();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = ""; // Let backend set filename via Content-Disposition
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Download error:", err);
-    alert("❌ Failed to download file");
-  }
+window.downloadFile = (id) => {
+  window.open(`${API_BASE}/api/download/${id}/`);
 };
 
 window.shareFile = async (id) => {
-  const token = getAuthToken();
-  if (!token) return handleAuthError();
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/files/share/`, { // Corrected endpoint
+    method: "POST",
+    headers: {
+      "Authorization": token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ file_id: id })
+  });
 
-  try {
-    const res = await fetch(`${API_BASE}/api/share/`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ file_id: id })
-    });
-
-    if (res.status === 401) return handleAuthError();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+  if (res.ok) {
     const data = await res.json();
     const shareUrl = data.share_url || data.url || data.link;
     if (shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
+      navigator.clipboard.writeText(shareUrl);
       alert("🔗 Share link copied!");
     } else {
-      alert("⚠️ Shared, but no link returned");
+      alert("❌ Failed to retrieve share link");
     }
-  } catch (err) {
-    console.error("Share error:", err);
-    alert("❌ Failed to generate share link");
+  } else {
+    alert("❌ Failed to share file");
   }
 };
 
 window.deleteFile = async (id) => {
   if (!confirm("Move this file to Trash?")) return;
 
-  const token = getAuthToken();
-  if (!token) return handleAuthError();
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/delete/${id}/`, { // Corrected endpoint
+    method: "POST",
+    headers: {
+      "Authorization": token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id })
+  });
 
-  try {
-    const res = await fetch(`${API_BASE}/api/delete/${id}/`, {
-      method: "DELETE",  // ✅ Must be DELETE
-      headers: { "Authorization": `Bearer ${token}` }  // ✅ Bearer
-      // ✅ No body — DELETE should not have one
-    });
-
-    if (res.status === 401) return handleAuthError();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+  if (res.ok) {
     alert("♻️ File moved to Trash");
-    loadMyFiles(); // refresh
-  } catch (err) {
-    console.error("Delete error:", err);
+    loadMyFiles();
+  } else {
     alert("❌ Failed to move file to Trash");
   }
 };
 
-// 🚀 Start
 loadMyFiles();
 </script>
 
