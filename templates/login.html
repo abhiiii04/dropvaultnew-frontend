@@ -25,9 +25,9 @@
     <p>Don’t have an account? <a href="/register">Sign up</a></p>
   </div>
 
-<script>
-// ✅ Critical: no trailing spaces!
-const API_BASE = "https://dropvault-2.onrender.com";
+<script type="module">
+// ✅ Import shared, clean API_BASE — no override, no spaces
+import { API_BASE } from "/static/js/api.js";
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -36,51 +36,39 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const password = document.getElementById("password").value;
 
   if (!email || !password) {
-    alert("Please fill in all fields.");
-    return;
+    return alert("Please fill in all fields.");
   }
 
   try {
     const res = await fetch(`${API_BASE}/api/login/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
-      // ❌ No credentials: 'include' — pure JWT mode
     });
 
-    // Always try JSON, but fallback to text if error
     let data;
     try {
       data = await res.json();
     } catch {
-      data = { error: "Invalid response from server" };
+      data = { detail: "Server returned invalid JSON." };
     }
-
-    console.log("[Login] Response:", { status: res.status, data });
 
     if (res.ok) {
-      // ✅ Support both standard (access) and custom (token) keys
       const token = data.access || data.token;
       if (token) {
-        // 🔑 Store under 'access' — matches myfiles.html
-        localStorage.setItem("access", token);
-        console.log("✅ JWT saved to localStorage under key 'access'");
+        localStorage.setItem("access", token); // ✅ key = "access" (matches myfiles.html)
         alert("✅ Login successful!");
-        window.location.replace("/dashboard"); // prevent back-to-login
+        window.location.replace("/dashboard");
         return;
-      } else {
-        alert("⚠️ Login succeeded, but no token received.");
       }
+      return alert("⚠️ Login succeeded, but no token received.");
     }
 
-    // Handle known error fields
-    const errorMsg = data.message || data.detail || data.error || "Login failed. Please check credentials.";
-    alert(`❌ ${errorMsg}`);
+    const msg = data.message || data.detail || "Login failed. Please check credentials.";
+    alert(`❌ ${msg}`);
   } catch (err) {
-    console.error("[Login] Network error:", err);
-    alert("🌐 Network error. Check your connection or console.");
+    console.error("[Login] Error:", err);
+    alert("🌐 Network error. Check console.");
   }
 });
 </script>
