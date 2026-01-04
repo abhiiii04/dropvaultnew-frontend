@@ -70,6 +70,11 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     alert('Network error. See console for details.');
   }
 });
+// If redirected with a message (e.g. ?message=Please+login+to+continue), show it.
+const _params = new URLSearchParams(window.location.search);
+if (_params.get('message')) {
+  try { alert(decodeURIComponent(_params.get('message'))); } catch { alert(_params.get('message')); }
+}
 </script>
 </body>
 </html>
