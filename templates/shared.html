@@ -153,7 +153,12 @@ async function loadSharedFiles() {
     const opts = { headers:{ "Authorization": token }, credentials: 'include' };
 
     try {
-      let res = await fetch(`${SHARED_API_BASE}/`, opts);
+      const url = `${SHARED_API_BASE}/`;
+      console.log('🚀 Fetching shared files from:', url);
+      console.log('📤 Request headers:', opts);
+      
+      let res = await fetch(url, opts);
+      console.log('📥 Response status:', res.status, res.statusText);
 
       // If direct fetch fails due to CORS/network, try proxy if configured
       if (!res || !res.ok) {
@@ -173,7 +178,16 @@ async function loadSharedFiles() {
       if (!res.ok) {
         // Try to extract server message when possible
         let errText = 'Failed to load shared files';
-        try { const err = await res.json(); errText = err.message || err.error || errText; } catch(_) { }
+        let resText = '';
+        try { 
+          resText = await res.text();
+          console.log('📄 Raw response body:', resText);
+          const err = JSON.parse(resText); 
+          errText = err.message || err.error || errText; 
+        } catch(_) { 
+          errText = resText || errText;
+        }
+        console.error('❌ Error loading shared files:', errText);
         alert(`❌ ${errText} (status: ${res.status})`);
         return;
       }
