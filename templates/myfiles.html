@@ -155,7 +155,7 @@ window.deleteFile = async (id) => {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/api/trash/move/`, {
+    const res = await fetch(`${API_BASE}/api/trash/`, {
       method: "POST",
       headers: {
         "Authorization": token,
