@@ -153,12 +153,21 @@ async function loadSharedFiles() {
     const opts = { headers:{ "Authorization": token }, credentials: 'include' };
 
     try {
-      const url = `${SHARED_API_BASE}/`;
+      // Try /api/shared/ first, fallback to /api/list/ if it doesn't exist
+      let url = `${SHARED_API_BASE}/`;
       console.log('🚀 Fetching shared files from:', url);
       console.log('📤 Request headers:', opts);
       
       let res = await fetch(url, opts);
       console.log('📥 Response status:', res.status, res.statusText);
+      
+      // If /api/shared/ doesn't exist (404), try /api/list/ instead
+      if (res.status === 404) {
+        console.log('⚠️ /api/shared/ not found, trying /api/list/ instead...');
+        url = `${API_BASE}/api/list/`;
+        res = await fetch(url, opts);
+        console.log('📥 Fallback response status:', res.status, res.statusText);
+      }
 
       // If direct fetch fails due to CORS/network, try proxy if configured
       if (!res || !res.ok) {
@@ -196,8 +205,11 @@ async function loadSharedFiles() {
       console.log('🔍 DEBUG: Raw API response:', data);
       list.innerHTML = "";
 
-      // Support API returning { shared: [...] } or an array directly
-      let items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+      // Support multiple response formats
+      let items = Array.isArray(data.shared) ? data.shared : 
+                  Array.isArray(data.files) ? data.files :
+                  Array.isArray(data.your_files) ? data.your_files :
+                  (Array.isArray(data) ? data : []);
       console.log('📋 DEBUG: Parsed items:', items);
       
       if (!items.length) {
