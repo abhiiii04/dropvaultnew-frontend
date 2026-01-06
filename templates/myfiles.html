@@ -155,17 +155,30 @@ window.deleteFile = async (id) => {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/api/trash/`, {
+    console.log('🗑 Deleting file with ID:', id);
+    const url = `${API_BASE}/api/trash/`;
+    const body = JSON.stringify({ id });
+    console.log('📤 Sending to:', url);
+    console.log('📦 Body:', body);
+    
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Authorization": token,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ id }),
+      body: body,
       credentials: "include"
     });
 
-    const parsed = await parseResponse(res);
+    console.log('📥 Response status:', res.status, res.statusText);
+    const text = await res.text();
+    console.log('📄 Response body:', text);
+    
+    let data;
+    try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+    const parsed = { authError: false, ok: res.ok, status: res.status, data };
+    
     if (parsed.authError) return;
     if (parsed.ok) {
       alert("♻️ File moved to Trash");
@@ -174,7 +187,7 @@ window.deleteFile = async (id) => {
       alert(parsed.data.message || "❌ Failed to move file to Trash");
     }
   } catch (error) {
-    console.warn("Error moving file to trash:", error);
+    console.error('❌ Error moving file to trash:', error);
     alert("❌ An unexpected error occurred while moving the file to Trash.");
   }
 };
