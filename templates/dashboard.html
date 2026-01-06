@@ -99,6 +99,12 @@ async function loadDashboard(){
     return;
   }
 
+  // If server indicated a redirect to login (302) or unauthorized, redirect user to frontend login
+  if (res && (res.status === 302 || res.status === 401)) {
+    console.warn('Dashboard returned auth redirect/status', res.status);
+    return window.location.href = '/login';
+  }
+
   // Fallback: use /api/list/ to populate recent uploads and file table
   try {
     const listUrl = `${API_BASE}/api/list/`;
@@ -109,6 +115,12 @@ async function loadDashboard(){
       return;
     }
     const bodyText = await listRes.text();
+    // If backend returned HTML (likely login page), redirect to login
+    const trimmed = bodyText.trim();
+    if (trimmed.startsWith('<') && /login|csrfmiddlewaretoken|name="username"/i.test(trimmed)) {
+      console.warn('Backend returned HTML login page when requesting /api/list/. Redirecting to /login');
+      return window.location.href = '/login';
+    }
     let body;
     try { body = JSON.parse(bodyText); } catch (_) { body = { raw: bodyText }; }
 
