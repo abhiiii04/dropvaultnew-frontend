@@ -156,18 +156,14 @@ window.deleteFile = async (id) => {
   }
   try {
     console.log('🗑 Deleting file with ID:', id);
-    const url = `${API_BASE}/api/trash/`;
-    const body = JSON.stringify({ id });
+    const url = `${API_BASE}/api/trash/?id=${id}`;
     console.log('📤 Sending to:', url);
-    console.log('📦 Body:', body);
     
     const res = await fetch(url, {
-      method: "POST",
+      method: "GET",
       headers: {
-        "Authorization": token,
-        "Content-Type": "application/json"
+        "Authorization": token
       },
-      body: body,
       credentials: "include"
     });
 
