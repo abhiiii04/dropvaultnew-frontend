@@ -179,10 +179,18 @@ async function loadSharedFiles() {
       }
 
       const data = await res.json();
+      console.log('🔍 DEBUG: Raw API response:', data);
       list.innerHTML = "";
 
       // Support API returning { shared: [...] } or an array directly
-      const items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+      let items = Array.isArray(data.shared) ? data.shared : (Array.isArray(data) ? data : []);
+      console.log('📋 DEBUG: Parsed items:', items);
+      
+      if (!items.length) {
+        list.innerHTML = "<tr><td colspan='4' style='text-align:center; padding: 20px;'>No shared files found</td></tr>";
+        console.warn('⚠️ WARNING: items array is empty. Check backend response format.');
+        return;
+      }
 
       items.forEach(s=>{
           let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
