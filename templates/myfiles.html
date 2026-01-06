@@ -154,38 +154,52 @@ window.deleteFile = async (id) => {
     window.location.href = "/login?message=" + encodeURIComponent("Please login to continue");
     return;
   }
-  try {
-    console.log('🗑 Deleting file with ID:', id);
-    const url = `${API_BASE}/api/trash/?id=${id}`;
-    console.log('📤 Sending to:', url);
-    
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Authorization": token
-      },
-      credentials: "include"
-    });
 
-    console.log('📥 Response status:', res.status, res.statusText);
-    const text = await res.text();
-    console.log('📄 Response body:', text);
-    
-    let data;
-    try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
-    const parsed = { authError: false, ok: res.ok, status: res.status, data };
-    
-    if (parsed.authError) return;
-    if (parsed.ok) {
-      alert("♻️ File moved to Trash");
-      loadMyFiles();
-    } else {
-      alert(parsed.data.message || "❌ Failed to move file to Trash");
+  const tryRequest = async (url, opts) => {
+    try {
+      console.log('➡️ Attempt:', opts.method || 'GET', url);
+      const r = await fetch(url, opts);
+      console.log('⬅️ Status:', r.status, r.statusText);
+      const text = await r.text();
+      console.log('📄 Body:', text);
+      let data;
+      try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+      return { res: r, data };
+    } catch (e) {
+      console.warn('Request failed for', url, e);
+      return { res: null, data: null, error: e };
     }
-  } catch (error) {
-    console.error('❌ Error moving file to trash:', error);
-    alert("❌ An unexpected error occurred while moving the file to Trash.");
+  };
+
+  const headersWithAuth = { Authorization: token };
+
+  // Try variants until one succeeds
+  const candidates = [
+    { url: `${API_BASE}/api/trash/?id=${id}`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
+    { url: `${API_BASE}/api/trash/${id}/`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
+    { url: `${API_BASE}/api/trash?id=${id}`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
+    { url: `${API_BASE}/api/trash/`, opts: { method: 'POST', headers: { ...headersWithAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), credentials: 'include' } }
+  ];
+
+  for (const c of candidates) {
+    const { url, opts } = c;
+    const result = await tryRequest(url, opts);
+    if (result && result.res) {
+      if (result.res.ok) {
+        alert('♻️ File moved to Trash');
+        loadMyFiles();
+        return;
+      }
+      // If 404 try next, if 401/auth error show message
+      if (result.res.status === 401) {
+        alert('Unauthorized. Please login again.');
+        return;
+      }
+      // Continue trying other variants for 4xx/5xx except auth
+    }
   }
+
+  alert('❌ Failed to move file to Trash. Check console for details.');
 };
 
 loadMyFiles();
