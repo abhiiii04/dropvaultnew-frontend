@@ -132,7 +132,7 @@ async function deleteFile(id) {
     if (token) headers['Authorization'] = token;
 
     const res = await fetch(url, {
-      method: 'GET',
+      method: 'DELETE',
       credentials: 'include',
       headers
     });
