@@ -123,45 +123,76 @@ async function deleteFile(id) {
 
   try {
     console.log('🗑️ Permanently deleting file ID:', id);
-    const url = `${API_BASE}/api/delete/${id}/`;
-    console.log('📤 Calling:', url);
-
     const headers = {};
     const csrftoken = getCookie('csrftoken');
     if (csrftoken) headers['X-CSRFToken'] = csrftoken;
     if (token) headers['Authorization'] = token;
 
-    const res = await fetch(url, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers
-    });
+    const tryRequest = async (url, opts) => {
+      try {
+        console.log('➡️ Attempt:', opts.method || 'GET', url);
+        const r = await fetch(url, opts);
+        const txt = await r.text();
+        console.log('⬅️', r.status, r.statusText, txt.substring(0,200));
+        let parsed;
+        try { parsed = JSON.parse(txt); } catch (_) { parsed = { raw: txt }; }
+        return { res: r, text: txt, data: parsed };
+      } catch (e) {
+        console.warn('Request error for', url, e);
+        return { res: null, error: e };
+      }
+    };
 
-    console.log('📥 Response status:', res.status, res.statusText);
-    const text = await res.text();
-    console.log('📄 Response body:', text.substring(0, 200));
+    // Primary attempt: GET /api/delete/{id}/
+    const primaryUrl = `${API_BASE}/api/delete/${id}/`;
+    let result = await tryRequest(primaryUrl, { method: 'GET', credentials: 'include', headers });
 
-    let data;
-    try { 
-      data = JSON.parse(text); 
-    } catch (_) { 
-      data = { raw: text }; 
-    }
-
-    if (res.ok) {
-      console.log('✅ File permanently deleted');
+    // If primary succeeded, finish
+    if (result.res && result.res.ok) {
       alert('🗑️ File Permanently Deleted!');
       loadTrash();
       return;
     }
 
-    const errMsg = data.message || data.error || text || 'Failed to delete file';
-    console.error('❌ Error:', errMsg, '(status:', res.status + ')');
-    alert(`❌ ${errMsg} (status: ${res.status})`);
+    // Read error message to decide fallback
+    const errMsg = result && result.data && (result.data.error || result.data.message) ? (result.data.error || result.data.message) : (result && result.text) || '';
+    console.warn('Initial delete response:', result && result.res && result.res.status, errMsg);
 
+    // If server says "already in trash" or similar, try additional permanent-delete endpoints
+    const lower = String(errMsg).toLowerCase();
+    const needFallback = lower.includes('already in trash') || lower.includes('already deleted') || (result.res && result.res.status === 400);
+
+    if (needFallback) {
+      const candidates = [
+        { method: 'GET',  url: `${API_BASE}/api/delete/${id}/?permanent=true` },
+        { method: 'POST', url: `${API_BASE}/api/delete/${id}/?permanent=true`, body: { id } },
+        { method: 'GET',  url: `${API_BASE}/api/delete/permanent/${id}/` },
+        { method: 'POST', url: `${API_BASE}/api/delete/permanent/${id}/`, body: { id } },
+        { method: 'POST', url: `${API_BASE}/api/trash/delete/`, body: { id } }
+      ];
+
+      for (const c of candidates) {
+        const opts = { method: c.method, credentials: 'include', headers: { ...headers } };
+        if (c.body) {
+          opts.headers = { ...opts.headers, 'Content-Type': 'application/json' };
+          opts.body = JSON.stringify(c.body);
+        }
+        const r = await tryRequest(c.url, opts);
+        if (r.res && r.res.ok) {
+          alert('🗑️ File Permanently Deleted!');
+          loadTrash();
+          return;
+        }
+      }
+
+      throw new Error('Permanent delete fallbacks all failed');
+    }
+
+    // Otherwise surface backend error
+    throw new Error(errMsg || 'Failed to delete file');
   } catch (err) {
-    console.error('❌ Error deleting file:', err);
-    alert('❌ An unexpected error occurred while deleting the file.');
+    console.error('❌ Error deleting file permanently:', err);
+    alert('❌ Failed to delete file permanently. See console for details.');
   }
 }
 
