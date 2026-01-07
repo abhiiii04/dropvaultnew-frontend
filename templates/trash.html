@@ -143,9 +143,9 @@ async function deleteFile(id) {
       }
     };
 
-    // Primary attempt: GET /api/delete/{id}/
+    // Primary attempt: DELETE /api/delete/{id}/
     const primaryUrl = `${API_BASE}/api/delete/${id}/`;
-    let result = await tryRequest(primaryUrl, { method: 'GET', credentials: 'include', headers });
+    let result = await tryRequest(primaryUrl, { method: 'DELETE', credentials: 'include', headers });
 
     // If primary succeeded, finish
     if (result.res && result.res.ok) {
@@ -164,16 +164,16 @@ async function deleteFile(id) {
 
     if (needFallback) {
       const candidates = [
-        { method: 'GET',  url: `${API_BASE}/api/delete/${id}/?permanent=true` },
-        { method: 'POST', url: `${API_BASE}/api/delete/${id}/?permanent=true`, body: { id } },
-        { method: 'GET',  url: `${API_BASE}/api/delete/permanent/${id}/` },
-        { method: 'POST', url: `${API_BASE}/api/delete/permanent/${id}/`, body: { id } },
-        { method: 'POST', url: `${API_BASE}/api/trash/delete/`, body: { id } }
+        { method: 'DELETE', url: `${API_BASE}/api/delete/${id}/?permanent=true` },
+        { method: 'DELETE', url: `${API_BASE}/api/delete/permanent/${id}/` },
+        { method: 'DELETE', url: `${API_BASE}/api/trash/delete/`, body: { id } },
+        { method: 'DELETE', url: `${API_BASE}/api/delete/?id=${id}` },
       ];
 
       for (const c of candidates) {
         const opts = { method: c.method, credentials: 'include', headers: { ...headers } };
         if (c.body) {
+          // Some servers accept body with DELETE; include if necessary
           opts.headers = { ...opts.headers, 'Content-Type': 'application/json' };
           opts.body = JSON.stringify(c.body);
         }
