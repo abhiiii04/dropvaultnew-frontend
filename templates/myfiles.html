@@ -161,7 +161,7 @@ window.deleteFile = async (id) => {
     console.log('📤 Calling:', url);
     
     const res = await fetch(url, {
-      method: "GET",
+      method: "DELETE",
       headers: { "Authorization": token },
       credentials: "include"
     });
