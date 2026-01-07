@@ -147,24 +147,72 @@ import { API_BASE, SHARED_API_BASE, CORS_PROXY } from "/static/js/api.js";
 
 async function loadSharedFiles() {
     const token = localStorage.getItem("token");
-    if(!token) return location.href = "/login";
+    if(!token) {
+      console.warn('No token found, redirecting to login');
+      return location.href = "/login";
+    }
 
     const list = document.getElementById("shared-list");
-    const opts = { headers:{ "Authorization": token }, credentials: 'include' };
+    
+    // Try multiple auth formats: "Bearer TOKEN", "Token TOKEN", plain token
+    const authHeaders = [
+      `Bearer ${token}`,
+      `Token ${token}`,
+      token
+    ];
 
     try {
-      // Try /api/shared/ first, fallback to /api/list/ if it doesn't exist
       let url = `${SHARED_API_BASE}/`;
       console.log('🚀 Fetching shared files from:', url);
-      console.log('📤 Request headers:', opts);
+      console.log('🔐 Token found (length:', token.length, ')');
       
-      let res = await fetch(url, opts);
-      console.log('📥 Response status:', res.status, res.statusText);
-      
-      // If /api/shared/ doesn't exist (404), try /api/list/ instead
-      if (res.status === 404) {
-        console.log('⚠️ /api/shared/ not found, trying /api/list/ instead...');
+      let res = null;
+      let lastError = null;
+
+      // Try with Bearer, then Token, then plain token
+      for (const authHeader of authHeaders) {
+        const opts = { 
+          headers: { "Authorization": authHeader }, 
+          credentials: 'include' 
+        };
+        console.log('📤 Attempt with auth header:', authHeader.substring(0, 20) + '...');
+        
+        try {
+          res = await fetch(url, opts);
+          console.log('📥 Response status:', res.status, res.statusText);
+          
+          const text = await res.text();
+          let data;
+          try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+          
+          // Check if backend returned login_required
+          if (data.login_required) {
+            console.warn('⚠️ Backend says auth required, trying next format...');
+            lastError = data;
+            continue; // Try next auth format
+          }
+          
+          // If we got a good response, use it
+          if (res.ok || !res.ok) {
+            // Rewind for JSON parsing below
+            res = new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers });
+            break; // Success, use this response
+          }
+        } catch (e) {
+          console.warn('Fetch attempt failed:', e);
+          lastError = e;
+          continue;
+        }
+      }
+
+      // If /api/shared/ failed with all auth attempts, try /api/list/ 
+      if (!res || !res.ok || lastError) {
+        console.log('⚠️ /api/shared/ failed, trying /api/list/ instead...');
         url = `${API_BASE}/api/list/`;
+        const opts = { 
+          headers: { "Authorization": token }, 
+          credentials: 'include' 
+        };
         res = await fetch(url, opts);
         console.log('📥 Fallback response status:', res.status, res.statusText);
       }
@@ -184,24 +232,30 @@ async function loadSharedFiles() {
 
       if (!res) throw new Error('Network request failed');
 
+      const responseText = await res.text();
+      console.log('📄 Raw response:', responseText.substring(0, 200));
+
+      // Check if response is login required
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (_) {
+        data = { raw: responseText };
+      }
+
+      if (data.login_required) {
+        console.error('❌ Authentication failed. Token may be invalid or expired.');
+        alert('❌ Session expired. Please login again.');
+        return location.href = "/login";
+      }
+
       if (!res.ok) {
-        // Try to extract server message when possible
-        let errText = 'Failed to load shared files';
-        let resText = '';
-        try { 
-          resText = await res.text();
-          console.log('📄 Raw response body:', resText);
-          const err = JSON.parse(resText); 
-          errText = err.message || err.error || errText; 
-        } catch(_) { 
-          errText = resText || errText;
-        }
-        console.error('❌ Error loading shared files:', errText);
+        let errText = data.message || data.error || 'Failed to load shared files';
+        console.error('❌ Error:', errText, '(status: ' + res.status + ')');
         alert(`❌ ${errText} (status: ${res.status})`);
         return;
       }
 
-      const data = await res.json();
       console.log('🔍 DEBUG: Raw API response:', data);
       list.innerHTML = "";
 
