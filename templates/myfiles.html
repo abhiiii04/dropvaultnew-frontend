@@ -155,55 +155,49 @@ window.deleteFile = async (id) => {
     return;
   }
 
-  const tryRequest = async (url, opts) => {
-    try {
-      console.log('🔹 Attempt:', opts.method || 'GET', url);
-      const r = await fetch(url, opts);
-      console.log('⬅️ Status:', r.status, r.statusText);
-      const text = await r.text();
-      console.log('📄 Body:', text.substring(0, 200));
-      let data;
-      try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
-      return { res: r, data };
-    } catch (e) {
-      console.warn('❌ Request failed:', e.message);
-      return { res: null, data: null, error: e };
+  try {
+    console.log('🗑️ Deleting file ID:', id);
+    const url = `${API_BASE}/api/delete/${id}/`;
+    console.log('📤 Calling:', url);
+    
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "Authorization": token },
+      credentials: "include"
+    });
+
+    console.log('📥 Response status:', res.status, res.statusText);
+    const text = await res.text();
+    console.log('📄 Response body:', text.substring(0, 200));
+
+    let data;
+    try { 
+      data = JSON.parse(text); 
+    } catch (_) { 
+      data = { raw: text }; 
     }
-  };
 
-  console.log('🗑️ Deleting file ID:', id);
-  const headersWithAuth = { "Authorization": token };
-
-  // Try variants: query param (GET), path param (GET), then POST
-  const candidates = [
-    { url: `${API_BASE}/api/trash/?file_id=${id}`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
-    { url: `${API_BASE}/api/trash/?id=${id}`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
-    { url: `${API_BASE}/api/trash/${id}/`, opts: { method: 'GET', headers: headersWithAuth, credentials: 'include' } },
-    { url: `${API_BASE}/api/trash/`, opts: { method: 'POST', headers: { ...headersWithAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: id }), credentials: 'include' } },
-    { url: `${API_BASE}/api/trash/`, opts: { method: 'POST', headers: { ...headersWithAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), credentials: 'include' } }
-  ];
-
-  for (const c of candidates) {
-    const { url, opts } = c;
-    const result = await tryRequest(url, opts);
-    if (result && result.res) {
-      if (result.res.ok) {
-        console.log('✅ Success! File moved to trash');
-        alert('♻️ File moved to Trash');
-        loadMyFiles();
-        return;
-      }
-      if (result.res.status === 401) {
-        console.error('❌ Unauthorized');
-        alert('Unauthorized. Please login again.');
-        return;
-      }
-      // Continue trying other variants
-      console.log('⏭️ Trying next variant...');
+    if (res.ok) {
+      console.log('✅ File successfully deleted');
+      alert('♻️ File moved to Trash');
+      loadMyFiles();
+      return;
     }
+
+    if (res.status === 401) {
+      console.error('❌ Unauthorized');
+      alert('Unauthorized. Please login again.');
+      return;
+    }
+
+    const errMsg = data.message || data.error || 'Failed to delete file';
+    console.error('❌ Error:', errMsg);
+    alert(`❌ ${errMsg} (status: ${res.status})`);
+
+  } catch (error) {
+    console.error('❌ Error deleting file:', error);
+    alert('❌ An unexpected error occurred while deleting the file.');
   }
-
-  alert('❌ Failed to move file to Trash. Check console for details.');
 };
 
 loadMyFiles();
