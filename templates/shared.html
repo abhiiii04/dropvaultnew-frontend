@@ -1,198 +1,115 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<style>
-
-.shared-wrapper {
-  max-width: 900px;
-  margin: 2px auto;
-  padding: 60px 80px;
-}
-
-
-.shared-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.shared-subtitle {
-  color: #7b7b7b;
-  margin-bottom: 20px;
-}
-
-
-.search-box {
-  background: #f2f2f8;
-  border-radius: 10px;
-  padding: 12px 15px;
-  margin-bottom: 25px;
-
-}
-
-.search-box input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 15px;
-}
-
-
-.shared-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.shared-table th,
-.shared-table td {
-  padding: 14px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.badge {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.badge-active {
-  background: #b8ffcc;
-  color: #0e8c3a;
-}
-
-.badge-expired {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.copy-btn {
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-</style>
-
 <div class="shared-wrapper">
-  <h1 class="shared-title">Shared Files</h1>
-  <p class="shared-subtitle">Files shared by you.</p>
+  <h1>Shared Files</h1>
+  <p>Files you've shared with others</p>
 
-  <div class="search-box">
-    <input id="sharedSearch" placeholder="Search shared files..." onkeyup="filterSharedFiles()">
+  <!-- SUMMARY -->
+  <div class="stats-bar">
+    <div><h2 id="totalShared">0</h2><span>Total Shared</span></div>
+    <div><h2 id="downloadedFiles">0</h2><span>Downloaded</span></div>
+    <div><h2 id="totalDownloads">0</h2><span>Total Downloads</span></div>
+    <div><h2 id="totalViews">0</h2><span>Total Views</span></div>
   </div>
 
+  <!-- TABLE -->
   <table class="shared-table">
     <thead>
       <tr>
-        <th>Filename</th>
-        <th>Expiry</th>
-        <th>Status</th>
-        <th>Action</th>
+        <th>File Name</th>
+        <th>Size</th>
+        <th>Downloads</th>
+        <th>Views</th>
+        <th>Created</th>
+        <th>Expires</th>
+        <th>Share Link</th>
       </tr>
     </thead>
-    <tbody id="shared-list">
-      <tr>
-        <td colspan="4" style="text-align:center;">Loading shared files...</td>
-      </tr>
+    <tbody id="sharedTable">
+      <tr><td colspan="7">Loading...</td></tr>
     </tbody>
   </table>
 </div>
 
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
-
+<script>
+const API_BASE = "https://dropvault-2.onrender.com";
 
 async function loadSharedFiles() {
-  const list = document.getElementById("shared-list");
-
   try {
     const res = await fetch(`${API_BASE}/api/shared/`, {
       credentials: "include"
     });
 
     const data = await res.json();
-    console.log("📦 /api/shared response:", data);
 
     if (data.login_required) {
       alert("Session expired. Please login again.");
-      window.location.href = "/login";
+      return location.href = "/login";
+    }
+
+    const files =
+      data.shared_files ||
+      data.shared ||
+      data.files ||
+      [];
+
+    // ---------- STATS ----------
+    document.getElementById("totalShared").innerText = files.length;
+
+    let downloaded = 0;
+    let totalDownloads = 0;
+    let totalViews = 0;
+
+    files.forEach(f => {
+      if (f.downloads > 0) downloaded++;
+      totalDownloads += f.downloads || 0;
+      totalViews += f.views || 0;
+    });
+
+    document.getElementById("downloadedFiles").innerText = downloaded;
+    document.getElementById("totalDownloads").innerText = totalDownloads;
+    document.getElementById("totalViews").innerText = totalViews;
+
+    // ---------- TABLE ----------
+    const table = document.getElementById("sharedTable");
+    table.innerHTML = "";
+
+    if (!files.length) {
+      table.innerHTML = `<tr><td colspan="7">No shared files</td></tr>`;
       return;
     }
 
-    // ✅ Normalize backend response
-    const items =
-      Array.isArray(data) ? data :
-      data.shared_files || data.shared || data.files || data.results || [];
-
-    list.innerHTML = "";
-
-    if (!items.length) {
-      list.innerHTML = `
+    files.forEach(f => {
+      const shareURL = `${API_BASE}/s/${f.share_key}/`;
+      table.innerHTML += `
         <tr>
-          <td colspan="4" style="text-align:center;">
-            No shared files to display.<br>
-            Use <b>My Files → Share</b> to generate links.
-          </td>
-        </tr>`;
-      return;
-    }
-
-    items.forEach(file => {
-      const expired = file.expiry && new Date(file.expiry) < new Date();
-      const statusClass = expired ? "badge-expired" : "badge-active";
-      const statusText = expired ? "Expired" : "Active";
-
-      // 🔗 Correct share URL
-      const shareURL = file.share_key
-        ? `${API_BASE}/s/${file.share_key}/`
-        : file.share_url || file.url || "";
-
-      list.innerHTML += `
-        <tr class="shared-row">
-          <td>${file.filename || "Unnamed file"}</td>
-          <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "No expiry"}</td>
-          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>${f.filename}</td>
+          <td>${(f.size || 0).toFixed(2)} MB</td>
+          <td>${f.downloads || 0} / ${f.max_downloads || "∞"}</td>
+          <td>${f.views || 0}</td>
+          <td>${new Date(f.created_at).toLocaleString()}</td>
+          <td>${new Date(f.expiry).toLocaleString()}</td>
           <td>
-            ${shareURL
-              ? `<button class="copy-btn" onclick="copyLink('${shareURL}')">Copy Link</button>`
-              : `<span style="color:#999">No link</span>`
-            }
+            <button onclick="copyLink('${shareURL}')">Copy Link</button>
           </td>
         </tr>
       `;
     });
 
   } catch (err) {
-    console.error("❌ Shared files error:", err);
-    list.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align:center;color:red;">
-          Failed to load shared files
-        </td>
-      </tr>`;
+    console.error(err);
+    document.getElementById("sharedTable").innerHTML =
+      `<tr><td colspan="7">Error loading shared files</td></tr>`;
   }
 }
 
-// ✅ FIXED SEARCH FUNCTION
-window.filterSharedFiles = () => {
-  const val = document.getElementById("sharedSearch").value.toLowerCase();
-  document.querySelectorAll(".shared-row").forEach(row => {
-    row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none";
-  });
-};
-
-window.copyLink = async (url) => {
-  await navigator.clipboard.writeText(url);
+function copyLink(url) {
+  navigator.clipboard.writeText(url);
   alert("🔗 Link copied!");
-};
+}
 
 loadSharedFiles();
 </script>
-
 
 {% endblock %}
