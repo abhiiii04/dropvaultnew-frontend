@@ -108,23 +108,33 @@ async function loadDashboard(){
   // Fallback: use /api/list/ to populate recent uploads and file table
   try {
     const listUrl = `${API_BASE}/api/list/`;
-    console.log('Falling back to list endpoint:', listUrl);
+    console.log('🔄 Falling back to list endpoint:', listUrl);
+    console.log('📤 Token present:', !!token, '(length:', token ? token.length : 0, ')');
+    
     const listRes = await fetch(listUrl, token ? { headers: { 'Authorization': token }, credentials: 'include' } : { credentials: 'include' });
+    console.log('📥 Response status:', listRes && listRes.status, listRes && listRes.statusText);
+    
     if (!listRes || !listRes.ok) {
-      console.error('Failed to fetch /api/list/:', listRes && listRes.status);
+      console.error('❌ Failed to fetch /api/list/:', listRes && listRes.status);
+      document.getElementById("recentUploads").innerHTML = "<li>❌ Failed to load files</li>";
       return;
     }
+    
     const bodyText = await listRes.text();
+    console.log('📄 Raw response (first 300 chars):', bodyText.substring(0, 300));
+    
     // If backend returned HTML (likely login page), redirect to login
     const trimmed = bodyText.trim();
     if (trimmed.startsWith('<') && /login|csrfmiddlewaretoken|name="username"/i.test(trimmed)) {
-      console.warn('Backend returned HTML login page when requesting /api/list/. Redirecting to /login');
+      console.warn('⚠️ Backend returned HTML login page. Redirecting to /login');
       return window.location.href = '/login';
     }
     let body;
     try { body = JSON.parse(bodyText); } catch (_) { body = { raw: bodyText }; }
 
+    console.log('🔍 Parsed response:', body);
     const files = body.files || body.your_files || (Array.isArray(body) ? body : []);
+    console.log('📋 Files found:', files.length, files);
     // Use most recent first if created_at exists
     files.sort((a,b) => {
       const ta = a.created_at || a.uploaded_at || a.timestamp || 0;
@@ -134,10 +144,16 @@ async function loadDashboard(){
 
     const recentUI = document.getElementById("recentUploads");
     recentUI.innerHTML = "";
-    (files.slice(0,5)).forEach(f => {
-      const when = f.created_at || f.uploaded_at || f.timestamp || '';
-      recentUI.innerHTML += `<li>${f.filename}${when ? ` — ${new Date(when).toLocaleString()}` : ''}</li>`;
-    });
+    if (!files.length) {
+      recentUI.innerHTML = "<li>No files uploaded yet</li>";
+      console.log('⚠️ No files in list');
+    } else {
+      (files.slice(0,5)).forEach(f => {
+        const when = f.created_at || f.uploaded_at || f.timestamp || '';
+        recentUI.innerHTML += `<li>${f.filename}${when ? ` — ${new Date(when).toLocaleString()}` : ''}</li>`;
+      });
+      console.log('✅ Recent uploads displayed');
+    }
 
     const table = document.getElementById("fileTable");
     table.innerHTML = "";
