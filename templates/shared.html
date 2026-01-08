@@ -2,14 +2,14 @@
 {% block content %}
 
 <style>
-/* Page Layout */
+
 .shared-wrapper {
   max-width: 900px;
   margin: 2px auto;
   padding: 60px 80px;
 }
 
-/* Title */
+
 .shared-title {
   font-size: 32px;
   font-weight: 700;
@@ -21,14 +21,13 @@
   margin-bottom: 20px;
 }
 
-/* Search Bar */
+
 .search-box {
   background: #f2f2f8;
   border-radius: 10px;
   padding: 12px 15px;
   margin-bottom: 25px;
-  display: flex;
-  align-items: center;
+
 }
 
 .search-box input {
@@ -39,32 +38,21 @@
   font-size: 15px;
 }
 
-/* Table */
+
 .shared-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  font-size: 15px;
-}
-
-.shared-table thead {
-  background: #fafafa;
 }
 
 .shared-table th,
 .shared-table td {
   padding: 14px 20px;
   border-bottom: 1px solid #eee;
-  text-align: left;
 }
 
-.shared-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* Status Badges */
 .badge {
   padding: 6px 12px;
   border-radius: 12px;
@@ -82,14 +70,12 @@
   color: #721c24;
 }
 
-/* Action button */
 .copy-btn {
   padding: 6px 10px;
   font-size: 13px;
   border-radius: 6px;
   cursor: pointer;
 }
-
 </style>
 
 <div class="shared-wrapper">
@@ -126,23 +112,22 @@ async function loadSharedFiles() {
 
   try {
     const res = await fetch(`${API_BASE}/api/shared/`, {
-      credentials: "include" // ✅ session auth
+      credentials: "include"
     });
 
     const data = await res.json();
-    console.log("📦 /api/shared/ raw response:", data);
+    console.log("📦 /api/shared response:", data);
 
     if (data.login_required) {
       alert("Session expired. Please login again.");
-      return window.location.href = "/login";
+      window.location.href = "/login";
+      return;
     }
 
-    // ✅ NORMALIZE RESPONSE (THIS IS THE KEY FIX)
-    let items = [];
-    if (Array.isArray(data)) items = data;
-    else if (Array.isArray(data.shared)) items = data.shared;
-    else if (Array.isArray(data.files)) items = data.files;
-    else if (Array.isArray(data.results)) items = data.results;
+    // ✅ Normalize backend response
+    const items =
+      Array.isArray(data) ? data :
+      data.shared_files || data.shared || data.files || data.results || [];
 
     list.innerHTML = "";
 
@@ -162,26 +147,20 @@ async function loadSharedFiles() {
       const statusClass = expired ? "badge-expired" : "badge-active";
       const statusText = expired ? "Expired" : "Active";
 
-      // Build share link
-      const sharePath =
-        file.share_url ||
-        file.url ||
-        file.link ||
-        (file.share_key ? `/s/${file.share_key}/` : null);
-
-      const fullUrl = sharePath
-        ? (sharePath.startsWith("http") ? sharePath : `${API_BASE}${sharePath}`)
-        : "";
+      // 🔗 Correct share URL
+      const shareURL = file.share_key
+        ? `${API_BASE}/s/${file.share_key}/`
+        : file.share_url || file.url || "";
 
       list.innerHTML += `
         <tr class="shared-row">
-          <td>${file.filename}</td>
+          <td>${file.filename || "Unnamed file"}</td>
           <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "No expiry"}</td>
           <td><span class="badge ${statusClass}">${statusText}</span></td>
           <td>
-            ${fullUrl
-              ? `<button class="copy-btn" onclick="copyLink('${fullUrl}')">Copy Link</button>`
-              : `<span style="color:#888">No link</span>`
+            ${shareURL
+              ? `<button class="copy-btn" onclick="copyLink('${shareURL}')">Copy Link</button>`
+              : `<span style="color:#999">No link</span>`
             }
           </td>
         </tr>
@@ -189,29 +168,31 @@ async function loadSharedFiles() {
     });
 
   } catch (err) {
-    console.error("❌ Shared load error:", err);
+    console.error("❌ Shared files error:", err);
     list.innerHTML = `
       <tr>
-        <td colspan="4" style="text-align:center; color:red;">
+        <td colspan="4" style="text-align:center;color:red;">
           Failed to load shared files
         </td>
       </tr>`;
   }
 }
 
+// ✅ FIXED SEARCH FUNCTION
+window.filterSharedFiles = () => {
+  const val = document.getElementById("sharedSearch").value.toLowerCase();
+  document.querySelectorAll(".shared-row").forEach(row => {
+    row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none";
+  });
+};
 
 window.copyLink = async (url) => {
   await navigator.clipboard.writeText(url);
   alert("🔗 Link copied!");
 };
 
-
-
-
-
 loadSharedFiles();
 </script>
-
 
 
 {% endblock %}
