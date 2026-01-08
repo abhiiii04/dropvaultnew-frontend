@@ -138,6 +138,12 @@ window.shareFile = async (id) => {
       const fullUrl = shareUrl.startsWith('http') ? shareUrl : (API_BASE + shareUrl);
       await navigator.clipboard.writeText(fullUrl);
       alert("🔗 Share link copied!");
+      // Trigger a background fetch to /api/shared/ to ensure server has recorded the share
+      try {
+        fetch(`${API_BASE}/api/shared/`, { method: 'GET', headers: { 'Authorization': token }, credentials: 'include' })
+          .then(r => console.log('Background /api/shared/ status:', r.status))
+          .catch(e => console.warn('Background /api/shared/ fetch failed', e));
+      } catch(e) { console.warn('Background shared check failed', e); }
     } else {
       alert("❌ Failed to retrieve share link");
     }
