@@ -120,27 +120,20 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-/* =======================
-   LOAD SHARED FILES
-======================= */
-async function loadSharedFiles() {
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
 
+async function loadSharedFiles() {
   const list = document.getElementById("shared-list");
 
   try {
     const res = await fetch(`${API_BASE}/api/shared/`, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      credentials: "include"   // ✅ SESSION AUTH ONLY
     });
 
     const data = await res.json();
 
-    if (!res.ok || data.login_required) {
+    if (data.login_required) {
       alert("Session expired. Please login again.");
-      return location.href = "/login";
+      return window.location.href = "/login";
     }
 
     const items = data.shared || [];
@@ -154,18 +147,17 @@ async function loadSharedFiles() {
             No shared files to display.<br>
             Use <b>My Files → Share</b> to generate links.
           </td>
-        </tr>
-      `;
+        </tr>`;
       return;
     }
 
     items.forEach(file => {
       const expired = file.expiry && new Date(file.expiry) < new Date();
-      const badgeClass = expired ? "badge-expired" : "badge-active";
-      const badgeText = expired ? "Expired" : "Active";
+      const statusClass = expired ? "badge-expired" : "badge-active";
+      const statusText = expired ? "Expired" : "Active";
 
       const sharePath = file.share_url || `/s/${file.share_key}/`;
-      const fullShareUrl = sharePath.startsWith("http")
+      const fullUrl = sharePath.startsWith("http")
         ? sharePath
         : `${API_BASE}${sharePath}`;
 
@@ -173,14 +165,11 @@ async function loadSharedFiles() {
         <tr class="shared-row">
           <td>${file.filename}</td>
           <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "No expiry"}</td>
-          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
           <td>
-            <button class="copy-btn" onclick="copyLink('${fullShareUrl}')">
-              Copy Link
-            </button>
+            <button class="copy-btn" onclick="copyLink('${fullUrl}')">Copy Link</button>
           </td>
-        </tr>
-      `;
+        </tr>`;
     });
 
   } catch (err) {
@@ -190,22 +179,17 @@ async function loadSharedFiles() {
         <td colspan="4" style="text-align:center; color:red;">
           Failed to load shared files
         </td>
-      </tr>
-    `;
+      </tr>`;
   }
 }
 
-/* =======================
-   COPY LINK
-======================= */
+
 window.copyLink = async (url) => {
   await navigator.clipboard.writeText(url);
   alert("🔗 Link copied!");
 };
 
-/* =======================
-   SEARCH FILTER
-======================= */
+
 window.filterSharedFiles = () => {
   const q = document.getElementById("sharedSearch").value.toLowerCase();
   document.querySelectorAll(".shared-row").forEach(row => {
@@ -213,8 +197,9 @@ window.filterSharedFiles = () => {
   });
 };
 
-/* INIT */
+
 loadSharedFiles();
 </script>
+
 
 {% endblock %}
