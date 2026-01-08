@@ -126,17 +126,23 @@ async function loadSharedFiles() {
 
   try {
     const res = await fetch(`${API_BASE}/api/shared/`, {
-      credentials: "include"   // ✅ SESSION AUTH ONLY
+      credentials: "include" // ✅ session auth
     });
 
     const data = await res.json();
+    console.log("📦 /api/shared/ raw response:", data);
 
     if (data.login_required) {
       alert("Session expired. Please login again.");
       return window.location.href = "/login";
     }
 
-    const items = data.shared || [];
+    // ✅ NORMALIZE RESPONSE (THIS IS THE KEY FIX)
+    let items = [];
+    if (Array.isArray(data)) items = data;
+    else if (Array.isArray(data.shared)) items = data.shared;
+    else if (Array.isArray(data.files)) items = data.files;
+    else if (Array.isArray(data.results)) items = data.results;
 
     list.innerHTML = "";
 
@@ -156,10 +162,16 @@ async function loadSharedFiles() {
       const statusClass = expired ? "badge-expired" : "badge-active";
       const statusText = expired ? "Expired" : "Active";
 
-      const sharePath = file.share_url || `/s/${file.share_key}/`;
-      const fullUrl = sharePath.startsWith("http")
-        ? sharePath
-        : `${API_BASE}${sharePath}`;
+      // Build share link
+      const sharePath =
+        file.share_url ||
+        file.url ||
+        file.link ||
+        (file.share_key ? `/s/${file.share_key}/` : null);
+
+      const fullUrl = sharePath
+        ? (sharePath.startsWith("http") ? sharePath : `${API_BASE}${sharePath}`)
+        : "";
 
       list.innerHTML += `
         <tr class="shared-row">
@@ -167,13 +179,17 @@ async function loadSharedFiles() {
           <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "No expiry"}</td>
           <td><span class="badge ${statusClass}">${statusText}</span></td>
           <td>
-            <button class="copy-btn" onclick="copyLink('${fullUrl}')">Copy Link</button>
+            ${fullUrl
+              ? `<button class="copy-btn" onclick="copyLink('${fullUrl}')">Copy Link</button>`
+              : `<span style="color:#888">No link</span>`
+            }
           </td>
-        </tr>`;
+        </tr>
+      `;
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ Shared load error:", err);
     list.innerHTML = `
       <tr>
         <td colspan="4" style="text-align:center; color:red;">
@@ -190,16 +206,12 @@ window.copyLink = async (url) => {
 };
 
 
-window.filterSharedFiles = () => {
-  const q = document.getElementById("sharedSearch").value.toLowerCase();
-  document.querySelectorAll(".shared-row").forEach(row => {
-    row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
-  });
-};
+
 
 
 loadSharedFiles();
 </script>
+
 
 
 {% endblock %}
