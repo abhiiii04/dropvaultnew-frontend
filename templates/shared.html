@@ -274,12 +274,19 @@ async function loadSharedFiles() {
 
       items.forEach(s=>{
           let exp = s.expiry ? new Date(s.expiry).toLocaleString() : '-';
+
+          // Build share path/link. Backend may provide several fields: share_url, url, link, slug, share_key
+          const rawShare = s.share_url || s.url || s.link || (s.slug ? `/s/${s.slug}/` : (s.share_key ? `/s/${s.share_key}/` : null));
+          const shareFull = rawShare ? (rawShare.startsWith('http') ? rawShare : (API_BASE + rawShare)) : null;
+
+          const action = shareFull ? ` <button class="copy-btn" onclick="copyLink('${shareFull}')">Copy Link</button>` : ` <span class="modify-link" onclick="getShare('${s.id}')">Create/Copy</span>`;
+
           list.innerHTML += `
             <tr class="shared-row">
               <td>${s.filename}</td>
               <td>${exp}</td>
               <td><span class="badge">${ s.expiry && new Date(s.expiry) > new Date() ? "Active" :"Expired" }</span></td>
-              <td><span class="modify-link" onclick="getShare('${s.id}')">Copy</span></td>
+              <td>${action}</td>
             </tr>
           `;
       });
