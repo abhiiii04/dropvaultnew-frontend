@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="main">
-  <h1>Welcome to DropVault</h1>
+  <h1 id="welcomeTitle">Welcome to DropVault</h1>
   <p>Secure. Simple. Yours.</p>
 
   <div class="dashboard-cards">
@@ -44,12 +44,32 @@
 </div>
 
 <script>
-const API_BASE = "https://dropvault-2.onrender.com"; // backend URL
+  const API_BASE = "https://dropvault-2.onrender.com"; // backend URL
 
 async function loadDashboard(){
   const token = localStorage.getItem("token");
 
-  // Try server dashboard first (keeps existing behavior if available)
+  // --- Fetch user info first ---
+  try {
+    const userUrl = `${API_BASE}/api/user/`;
+    const userRes = await fetch(userUrl, token ? { headers: { 'Authorization': token }, credentials: 'include' } : { credentials: 'include' });
+    if (userRes && userRes.ok) {
+      try {
+        const u = await userRes.json();
+        if (u && (u.username || u.email || u.name)) {
+          const name = u.username || u.name || u.email;
+          document.getElementById('welcomeTitle').innerText = `Welcome, ${name}`;
+        }
+        console.log('User data:', u);
+      } catch (e) { console.warn('Failed to parse /api/user/ response', e); }
+    } else {
+      console.log('/api/user/ not available or unauthorized', userRes && userRes.status);
+    }
+  } catch (e) {
+    console.warn('Error fetching /api/user/:', e);
+  }
+
+  // Try server dashboard next (keeps existing behavior if available)
   const dashboardUrl = `${API_BASE}/dashboard/`;
   let res;
   try {
