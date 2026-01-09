@@ -52,7 +52,9 @@ async function loadDashboard(){
   // --- Fetch user info first ---
   try {
     const userUrl = `${API_BASE}/api/user/`;
-    const userRes = await fetch(userUrl, token ? { headers: { 'Authorization': token }, credentials: 'include' } : { credentials: 'include' });
+    // Normalize token format: backend commonly expects 'Token <token>' or 'Bearer <token>'
+    const authHeader = token ? (/^Bearer\s+/i.test(token) || /^Token\s+/i.test(token) ? token : `Token ${token}`) : null;
+    const userRes = await fetch(userUrl, token ? { headers: { 'Authorization': authHeader }, credentials: 'include' } : { credentials: 'include' });
     if (userRes && userRes.ok) {
       try {
         const u = await userRes.json();
@@ -74,7 +76,7 @@ async function loadDashboard(){
   let res;
   try {
     if (token) {
-      res = await fetch(dashboardUrl, { method: 'GET', headers: { 'Authorization': token } });
+      res = await fetch(dashboardUrl, { method: 'GET', headers: { 'Authorization': authHeader }, credentials: 'include' });
     } else {
       res = await fetch(dashboardUrl, { method: 'GET', credentials: 'include' });
     }
@@ -131,8 +133,12 @@ async function loadDashboard(){
     console.log('🔄 Falling back to list endpoint:', listUrl);
     console.log('📤 Token present:', !!token, '(length:', token ? token.length : 0, ')');
     
-    const listRes = await fetch(listUrl, token ? { headers: { 'Authorization': token }, credentials: 'include' } : { credentials: 'include' });
+    const listRes = await fetch(listUrl, token ? { headers: { 'Authorization': authHeader }, credentials: 'include' } : { credentials: 'include' });
     console.log('📥 Response status:', listRes && listRes.status, listRes && listRes.statusText);
+    if (listRes && (listRes.status === 302 || listRes.status === 401)) {
+      console.warn('/api/list/ returned auth redirect/status', listRes.status);
+      return window.location.href = '/login';
+    }
     
     if (!listRes || !listRes.ok) {
       console.error('❌ Failed to fetch /api/list/:', listRes && listRes.status);
