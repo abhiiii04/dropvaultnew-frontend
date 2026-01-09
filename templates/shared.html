@@ -126,7 +126,7 @@ async function loadSharedFiles() {
 
   try {
     const res = await fetch(`${API_BASE}/api/shared/`, {
-      credentials: "include" // ✅ session auth
+      credentials: "include" 
     });
 
     const data = await res.json();
@@ -137,7 +137,7 @@ async function loadSharedFiles() {
       return window.location.href = "/login";
     }
 
-    // ✅ NORMALIZE RESPONSE (THIS IS THE KEY FIX)
+    //  NORMALIZE RESPONSE (THIS IS THE KEY FIX)
     let items = [];
     if (Array.isArray(data)) items = data;
     else if (Array.isArray(data.shared)) items = data.shared;
@@ -158,7 +158,16 @@ async function loadSharedFiles() {
     }
 
     items.forEach(file => {
-      const expired = file.expiry && new Date(file.expiry) < new Date();
+      // Parse expiry: try multiple field names
+      let expiryTime = file.expiry || file.expires_at || file.expires || file.expiry_date;
+      
+      // If no expiry provided but file has created_at or uploaded_at, assume 24 hours from creation
+      if (!expiryTime && (file.created_at || file.uploaded_at || file.timestamp)) {
+        const createdTime = new Date(file.created_at || file.uploaded_at || file.timestamp);
+        expiryTime = new Date(createdTime.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
+      }
+
+      const expired = expiryTime && new Date(expiryTime) < new Date();
       const statusClass = expired ? "badge-expired" : "badge-active";
       const statusText = expired ? "Expired" : "Active";
 
@@ -173,10 +182,21 @@ async function loadSharedFiles() {
         ? (sharePath.startsWith("http") ? sharePath : `${API_BASE}${sharePath}`)
         : "";
 
+      // Format expiry display
+      let expiryDisplay = "No expiry";
+      if (expiryTime) {
+        try {
+          expiryDisplay = new Date(expiryTime).toLocaleString();
+        } catch (e) {
+          console.warn('Invalid expiry date:', expiryTime);
+          expiryDisplay = "Invalid date";
+        }
+      }
+
       list.innerHTML += `
         <tr class="shared-row">
           <td>${file.filename}</td>
-          <td>${file.expiry ? new Date(file.expiry).toLocaleString() : "No expiry"}</td>
+          <td>${expiryDisplay}</td>
           <td><span class="badge ${statusClass}">${statusText}</span></td>
           <td>
             ${fullUrl
@@ -215,4 +235,3 @@ loadSharedFiles();
 
 
 {% endblock %}
-
