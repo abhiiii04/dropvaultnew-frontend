@@ -5,24 +5,24 @@
 /* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
-  --content-max: 2400px;
+  --content-max: 1200px; /* same feel as dashboard */
 }
 
 /* ================= MAIN LAYOUT ================= */
 .main-content {
   margin-left: var(--sidebar-width);
-  padding: 42px 50px;
+  padding: 60px 80px; /* MATCH dashboard padding */
   background: #f6f8fc;
   min-height: 100vh;
   width: calc(100% - var(--sidebar-width));
   box-sizing: border-box;
 }
 
-/* Page wrapper fills available space */
+/* Page wrapper — centered like dashboard */
 .files-page {
-  width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
+  width: 100%;
 }
 
 /* ================= HEADER ================= */
@@ -59,7 +59,6 @@
   background: #ffffff;
   border-radius: 18px;
   padding: 22px 32px;
-  width: 100%;
   display: flex;
   justify-content: space-between;
   margin-bottom: 28px;
@@ -86,15 +85,14 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
-  width: 100%;
 }
 
 .search-box {
-  background: #fff;
-  padding: 12px 16px;
-  border-radius: 14px;
-  width: 420px;
-  border: 1px solid #e5e7eb;
+  background: #f2f2f8; /* same as dashboard */
+  padding: 12px 15px;
+  border-radius: 10px;
+  width: 360px;
+  border: none;
 }
 
 .filter-group {
@@ -112,62 +110,62 @@
 /* ================= GRID ================= */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 28px;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px; /* tighter like dashboard */
 }
 
 /* ================= FILE CARD ================= */
 .file-card {
   background: #ffffff;
-  border-radius: 22px;
-  padding: 22px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease;
 }
 
 .file-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
 }
 
+/* ================= FILE ICON ================= */
 .file-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   background: #fee2e2;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .file-icon img {
-  width: 34px;
+  width: 32px;
 }
 
+/* ================= FILE TEXT ================= */
 .file-name {
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   word-break: break-word;
 }
 
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 /* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .file-actions button {
   flex: 1;
-  padding: 11px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
 }
