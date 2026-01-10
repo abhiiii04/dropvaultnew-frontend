@@ -2,26 +2,28 @@
 {% block content %}
 
 <style>
-/* ================= LAYOUT ================= */
+/* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
+  --content-max: 1400px;
 }
 
-/* Main area */
+/* ================= MAIN LAYOUT ================= */
 .main-content {
   margin-left: var(--sidebar-width);
   padding: 32px 40px;
   background: #f6f8fc;
   min-height: 100vh;
+  width: calc(100% - var(--sidebar-width));
   box-sizing: border-box;
 }
 
-/* Page wrapper now fills space */
+/* Page wrapper fills available space */
 .files-page {
   width: 100%;
-  max-width: none;          /* ❌ remove restriction */
+  max-width: var(--content-max);
+  margin: 0 auto;
 }
-
 
 /* ================= HEADER ================= */
 .page-header {
@@ -45,7 +47,7 @@
 .upload-btn {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: #fff;
-  padding: 12px 20px;
+  padding: 12px 22px;
   border-radius: 14px;
   font-weight: 600;
   border: none;
@@ -56,12 +58,16 @@
 .stats-bar {
   background: #ffffff;
   border-radius: 18px;
-  padding: 20px 32px;
+  padding: 22px 32px;
   width: 100%;
   display: flex;
   justify-content: space-between;
   margin-bottom: 28px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+.stat {
+  text-align: center;
 }
 
 .stat strong {
@@ -106,26 +112,28 @@
 /* ================= GRID ================= */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 28px;
+  width: 100%;
 }
 
 /* ================= FILE CARD ================= */
 .file-card {
   background: #ffffff;
   border-radius: 22px;
-  padding: 20px;
+  padding: 22px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .file-card:hover {
   transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
 }
 
 .file-icon {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
   background: #fee2e2;
   display: flex;
@@ -147,7 +155,7 @@
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 /* ================= ACTIONS ================= */
@@ -158,16 +166,28 @@
 
 .file-actions button {
   flex: 1;
-  padding: 10px;
+  padding: 11px;
   border-radius: 12px;
   border: none;
   cursor: pointer;
 }
 
-.btn-download { background: #eef2ff; color: #4338ca; }
-.btn-share { background: #ecfdf5; color: #047857; }
-.btn-delete { background: #fee2e2; color: #b91c1c; }
+.btn-download {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.btn-share {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 </style>
+
 
 <div class="main-content">
   <div class="files-page">
