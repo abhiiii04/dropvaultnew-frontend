@@ -1,7 +1,195 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="myfiles-container">
+<style>
+/* ================= ROOT ================= */
+:root {
+  --sidebar-width: 240px;
+  --content-max: 1400px;
+}
+
+/* ================= MAIN LAYOUT ================= */
+.main-content {
+  margin-left: var(--sidebar-width);
+  padding: 32px 40px;
+  background: #f6f8fc;
+  min-height: 100vh;
+  width: calc(100% - var(--sidebar-width));
+  box-sizing: border-box;
+}
+
+/* Page wrapper fills available space */
+.files-page {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+/* ================= HEADER ================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.page-title h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.page-title p {
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.upload-btn {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+/* ================= STATS ================= */
+.stats-bar {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px 32px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat strong {
+  font-size: 22px;
+}
+
+.stat span {
+  display: block;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ================= FILTERS ================= */
+.filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.search-box {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 14px;
+  width: 420px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-group {
+  display: flex;
+  gap: 12px;
+}
+
+.select {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+/* ================= GRID ================= */
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
+  width: 100%;
+}
+
+/* ================= FILE CARD ================= */
+.file-card {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.file-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+}
+
+.file-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.file-icon img {
+  width: 34px;
+}
+
+.file-name {
+  font-weight: 600;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.file-meta {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 18px;
+}
+
+/* ================= ACTIONS ================= */
+.file-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.file-actions button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-download {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.btn-share {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+</style>
+
+
+<div class="main-content">
   <div class="files-page">
 
     <!-- Header -->
