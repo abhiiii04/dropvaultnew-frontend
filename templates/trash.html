@@ -20,40 +20,19 @@
 </div>
 
 <script>
-/* 
-  Uses global API_BASE already defined in base.html / api.js
-  DO NOT redeclare API_BASE here
-*/
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
 async function loadTrash() {
   console.log("🧹 loadTrash() called");
-
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Session expired. Please login again.");
-    return location.href = "/login";
-  }
 
   try {
     const res = await fetch(`${API_BASE}/api/trash/`, {
       method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      credentials: "include" // ✅ THIS IS THE FIX
     });
 
     console.log("📥 Trash response status:", res.status);
 
     if (res.status === 401) {
       alert("Session expired. Please login again.");
-      localStorage.removeItem("token");
       return location.href = "/login";
     }
 
@@ -99,25 +78,16 @@ async function loadTrash() {
 }
 
 async function restoreFile(id) {
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
-
   try {
     const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      credentials: "include"
     });
 
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(await res.text());
 
     alert("♻️ File restored successfully");
     loadTrash();
-
   } catch (err) {
     console.error("❌ Restore error:", err);
     alert("Failed to restore file");
@@ -127,27 +97,16 @@ async function restoreFile(id) {
 async function permanentDelete(id) {
   if (!confirm("⚠️ Permanently delete this file?")) return;
 
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
-
   try {
     const res = await fetch(`${API_BASE}/api/delete/${id}/`, {
       method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      credentials: "include"
     });
 
-    console.log("🗑️ Delete status:", res.status);
-
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(await res.text());
 
     alert("🗑️ File permanently deleted");
     loadTrash();
-
   } catch (err) {
     console.error("❌ Delete error:", err);
     alert("Failed to permanently delete file");
@@ -156,6 +115,7 @@ async function permanentDelete(id) {
 
 document.addEventListener("DOMContentLoaded", loadTrash);
 </script>
+
 
 
 {% endblock %}
