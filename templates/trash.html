@@ -20,188 +20,39 @@
 </div>
 
 <script>
-// Ensure we don't redeclare a global API_BASE (prevents duplicate-const errors)
-if (typeof API_BASE === 'undefined') { var API_BASE = "https://dropvault-2.onrender.com"; }
-
-// Read a cookie value by name (used to get CSRF token if backend provides it)
-function getCookie(name) {
-  const v = `; ${document.cookie}`;
-  const parts = v.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
-async function loadTrash() {
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
-
-  try {
-    const headers = {};
-    const csrftoken = getCookie('csrftoken');
-    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
-    // include Authorization if available (some backends accept either)
-    if (token) headers['Authorization'] = token;
-
-    const res = await fetch(`${API_BASE}/api/trash/`, {
-      credentials: 'include',
-      headers
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to load trash: ${res.status}`);
-    }
-
-    const data = await res.json();
-    const table = document.getElementById("trashTable");
-
-    // ✅ FIXED: Use data.files (not data.trash)
-    if (!data.files || data.files.length === 0) {
-      table.innerHTML = `<tr><td colspan="4" style="text-align:center;">No files in trash</td></tr>`;
-      return;
-    }
-
-    table.innerHTML = data.files.map(file => {
-      // ✅ FIXED: Use file.deleted_at (not deleted_on)
-      const deletedDate = new Date(file.deleted_at);
-      const formattedDate = deletedDate.toLocaleDateString(); // e.g., "1/2/2026"
-
-      return `
-        <tr>
-          <td>${file.filename}</td>
-          <td>${formattedDate}</td>
-          <td>${file.days_remaining} days</td>
-          <td>
-            <button onclick="restoreFile('${file.id}')" class="btn small restore-btn">♻️ Restore</button>
-            <button onclick="deleteFile('${file.id}')" class="btn small delete-btn">🗑️ Delete Permanently</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error("Error loading trash:", err);
-    document.getElementById("trashTable").innerHTML = 
-      `<tr><td colspan="4" style="text-align:center;color:red;">Error loading trash. Check console.</td></tr>`;
-  }
-}
-
-async function restoreFile(id) {
-  const token = localStorage.getItem("token");
-  if (!token) return alert("Not logged in");
-
-  try {
-    // ✅ FIXED: Use correct endpoint — /api/restore/<id>/ (POST, no body)
-    const headers = { 'Content-Type': 'application/json' };
-    const csrftoken = getCookie('csrftoken');
-    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
-    if (token) headers['Authorization'] = token;
-
-    const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
-      method: "POST",
-      credentials: 'include',
-      headers,
-      body: JSON.stringify({})
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Restore failed (${res.status}): ${errText}`);
-    }
-
-    alert("♻️ File Restored!");
-    loadTrash();
-  } catch (err) {
-    console.error("Restore error:", err);
-    alert("❌ Failed to restore file. See console for details.");
-  }
-}
-
 async function deleteFile(id) {
   if (!confirm("⚠️ Permanently delete this file? This cannot be undone.")) return;
 
   const token = localStorage.getItem("token");
-  if (!token) return alert("Not logged in");
+  if (!token) {
+    alert("Session expired. Please login again.");
+    return location.href = "/login";
+  }
 
   try {
-    console.log('🗑️ Permanently deleting file ID:', id);
-    const headers = {};
-    const csrftoken = getCookie('csrftoken');
-    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
-    if (token) headers['Authorization'] = token;
-
-    const tryRequest = async (url, opts) => {
-      try {
-        console.log('➡️ Attempt:', opts.method || 'GET', url);
-        const r = await fetch(url, opts);
-        const txt = await r.text();
-        console.log('⬅️', r.status, r.statusText, txt.substring(0,200));
-        let parsed;
-        try { parsed = JSON.parse(txt); } catch (_) { parsed = { raw: txt }; }
-        return { res: r, text: txt, data: parsed };
-      } catch (e) {
-        console.warn('Request error for', url, e);
-        return { res: null, error: e };
+    const res = await fetch(`https://dropvault-2.onrender.com/api/delete/${id}/`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
       }
-    };
+    });
 
-    // Primary attempt: DELETE /api/delete/{id}/
-    const primaryUrl = `${API_BASE}/api/delete/${id}/`;
-    let result = await tryRequest(primaryUrl, { method: 'DELETE', credentials: 'include', headers });
+    const data = await res.json().catch(() => ({}));
 
-    // If primary succeeded, finish
-    if (result.res && result.res.ok) {
-      alert('🗑️ File Permanently Deleted!');
-      loadTrash();
+    if (!res.ok) {
+      console.error("Delete failed:", data);
+      alert(data.message || data.error || "Failed to delete file permanently");
       return;
     }
 
-    // Read error message to decide fallback
-    const errMsg = result && result.data && (result.data.error || result.data.message) ? (result.data.error || result.data.message) : (result && result.text) || '';
-    console.warn('Initial delete response:', result && result.res && result.res.status, errMsg);
+    alert("🗑️ File permanently deleted!");
+    loadTrash(); // refresh trash list
 
-    // If server says "already in trash" or similar, try additional permanent-delete endpoints
-    const lower = String(errMsg).toLowerCase();
-    const needFallback = lower.includes('already in trash') || lower.includes('already deleted') || (result.res && result.res.status === 400);
-
-    if (needFallback) {
-      const candidates = [
-        { method: 'DELETE', url: `${API_BASE}/api/delete/${id}/?permanent=true` },
-        { method: 'DELETE', url: `${API_BASE}/api/delete/permanent/${id}/` },
-        { method: 'DELETE', url: `${API_BASE}/api/trash/delete/`, body: { id } },
-        { method: 'DELETE', url: `${API_BASE}/api/delete/?id=${id}` },
-      ];
-
-      for (const c of candidates) {
-        const opts = { method: c.method, credentials: 'include', headers: { ...headers } };
-        if (c.body) {
-          // Some servers accept body with DELETE; include if necessary
-          opts.headers = { ...opts.headers, 'Content-Type': 'application/json' };
-          opts.body = JSON.stringify(c.body);
-        }
-        const r = await tryRequest(c.url, opts);
-        if (r.res && r.res.ok) {
-          alert('🗑️ File Permanently Deleted!');
-          loadTrash();
-          return;
-        }
-      }
-
-      throw new Error('Permanent delete fallbacks all failed');
-    }
-
-    // Otherwise surface backend error
-    throw new Error(errMsg || 'Failed to delete file');
   } catch (err) {
-    console.error('❌ Error deleting file permanently:', err);
-    alert('❌ Failed to delete file permanently. See console for details.');
+    console.error("Permanent delete error:", err);
+    alert("❌ Server error while deleting file");
   }
 }
-
-// Informational handler when backend doesn't support permanent-delete
-function unavailablePermanentDelete(id) {
-  alert('Permanent delete is not supported by the server API.\n\nOptions:\n- Permanently delete via the backend admin or DB, or\n- Add a permanent-delete endpoint (e.g. DELETE /api/delete/<id>/?permanent=true) on the server.');
-}
-
-// Load on page ready
-document.addEventListener("DOMContentLoaded", loadTrash);
 </script>
+
 {% endblock %}
