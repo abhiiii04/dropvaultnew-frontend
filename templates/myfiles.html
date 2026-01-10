@@ -2,79 +2,96 @@
 {% block content %}
 
 <style>
-/* ===== Page Layout ===== */
-.files-page {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
+/* ================= ROOT LAYOUT ================= */
+:root {
+  --sidebar-width: 240px;
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  padding: 32px 40px;
+  background: #f6f8fc;
+  min-height: 100vh;
+  box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ===== Header ===== */
+/* ================= PAGE ================= */
+.files-page {
+  max-width: 1200px;
+}
+
+/* ================= HEADER ================= */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 28px;
 }
+
 .page-title h1 {
   font-size: 32px;
   font-weight: 700;
+  margin: 0;
 }
+
 .page-title p {
   color: #6b7280;
-  margin-top: 4px;
+  margin-top: 6px;
 }
+
 .upload-btn {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: #fff;
-  padding: 12px 18px;
+  padding: 12px 20px;
   border-radius: 14px;
   font-weight: 600;
   border: none;
   cursor: pointer;
 }
 
-/* ===== Stats ===== */
+/* ================= STATS ================= */
 .stats-bar {
   background: #ffffff;
   border-radius: 18px;
-  padding: 20px;
+  padding: 20px 30px;
   display: flex;
-  gap: 40px;
-  margin-bottom: 25px;
+  gap: 60px;
+  margin-bottom: 28px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
 }
-.stat {
-  text-align: center;
-}
+
 .stat strong {
   font-size: 22px;
 }
+
 .stat span {
   display: block;
   font-size: 14px;
   color: #6b7280;
 }
 
-/* ===== Filters ===== */
+/* ================= FILTERS ================= */
 .filters {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 28px;
 }
+
 .search-box {
   background: #fff;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: 14px;
   width: 320px;
   border: 1px solid #e5e7eb;
 }
+
 .filter-group {
   display: flex;
   gap: 12px;
 }
+
 .select {
   padding: 10px 14px;
   border-radius: 12px;
@@ -82,20 +99,26 @@
   background: #fff;
 }
 
-/* ===== File Grid ===== */
+/* ================= GRID ================= */
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-/* ===== File Card ===== */
+/* ================= FILE CARD ================= */
 .file-card {
   background: #ffffff;
   border-radius: 20px;
   padding: 18px;
   box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease;
 }
+
+.file-card:hover {
+  transform: translateY(-2px);
+}
+
 .file-icon {
   width: 56px;
   height: 56px;
@@ -106,23 +129,29 @@
   justify-content: center;
   margin-bottom: 14px;
 }
+
 .file-icon img {
   width: 34px;
 }
+
 .file-name {
   font-weight: 600;
   margin-bottom: 6px;
   word-break: break-word;
 }
+
 .file-meta {
   font-size: 13px;
   color: #6b7280;
   margin-bottom: 14px;
 }
+
+/* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
   gap: 10px;
 }
+
 .file-actions button {
   flex: 1;
   padding: 10px;
@@ -130,47 +159,48 @@
   border: none;
   cursor: pointer;
 }
+
 .btn-download { background: #eef2ff; color: #4338ca; }
 .btn-share { background: #ecfdf5; color: #047857; }
 .btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
 
-<div class="files-page">
+<div class="main-content">
+  <div class="files-page">
 
-  <!-- Header -->
-  <div class="page-header">
-    <div class="page-title">
-      <h1>My Files</h1>
-      <p>Manage and organize all your uploaded files</p>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-title">
+        <h1>My Files</h1>
+        <p>Manage and organize all your uploaded files</p>
+      </div>
+      <button class="upload-btn" onclick="location.href='/upload'">⬆ Upload Files</button>
     </div>
-    <button class="upload-btn" onclick="location.href='/upload'">
-      ⬆ Upload Files
-    </button>
-  </div>
 
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
-    <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
-    <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
-    <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
-    <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
-  </div>
-
-  <!-- Filters -->
-  <div class="filters">
-    <input class="search-box" id="searchInput" placeholder="Search files...">
-    <div class="filter-group">
-      <select class="select"><option>All Types</option></select>
-      <select class="select"><option>Date (Newest)</option></select>
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
+      <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
+      <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
+      <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
+      <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
     </div>
-  </div>
 
-  <!-- Files -->
-  <div class="file-grid" id="your-files-list">
-    <div>Loading...</div>
-  </div>
+    <!-- Filters -->
+    <div class="filters">
+      <input class="search-box" placeholder="Search files...">
+      <div class="filter-group">
+        <select class="select"><option>All Types</option></select>
+        <select class="select"><option>Date (Newest)</option></select>
+      </div>
+    </div>
 
+    <!-- Files -->
+    <div class="file-grid" id="your-files-list">
+      <div>Loading...</div>
+    </div>
+
+  </div>
 </div>
 
 <script type="module">
@@ -180,27 +210,18 @@ const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/login";
-    return;
-  }
+  if (!token) return location.href = "/login";
 
   const res = await fetch(`${API_BASE}/api/list/`, {
     headers: { Authorization: token },
     credentials: "include"
   });
 
-  if (!res.ok) {
-    alert("Failed to load files");
-    return;
-  }
-
   const data = await res.json();
   const files = data.files || data.your_files || [];
-  const list = document.getElementById("your-files-list");
 
   document.getElementById("totalCount").innerText = files.length;
-
+  const list = document.getElementById("your-files-list");
   list.innerHTML = "";
 
   if (!files.length) {
@@ -211,15 +232,11 @@ async function loadMyFiles() {
   files.forEach(f => {
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon">
-          <img src="${FILE_ICON}">
-        </div>
+        <div class="file-icon"><img src="${FILE_ICON}"></div>
         <div class="file-name">${f.filename}</div>
-        <div class="file-meta">
-          ${(f.size / 1024 / 1024).toFixed(2)} MB • Today
-        </div>
+        <div class="file-meta">${(f.size/1024/1024).toFixed(2)} MB</div>
         <div class="file-actions">
-          <button class="btn-download" onclick="downloadFile('${f.id}')">⬇</button>
+          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
@@ -228,11 +245,7 @@ async function loadMyFiles() {
   });
 }
 
-window.downloadFile = (id) => {
-  window.open(`${API_BASE}/api/download/${id}/`);
-};
-
-window.shareFile = async (id) => {
+window.shareFile = async id => {
   const token = localStorage.getItem("token");
   const res = await fetch(`${API_BASE}/api/share/${id}/`, {
     method: "POST",
@@ -244,8 +257,8 @@ window.shareFile = async (id) => {
   alert("🔗 Share link copied");
 };
 
-window.deleteFile = async (id) => {
-  if (!confirm("Delete this file?")) return;
+window.deleteFile = async id => {
+  if (!confirm("Move this file to Trash?")) return;
   const token = localStorage.getItem("token");
   await fetch(`${API_BASE}/api/delete/${id}/`, {
     method: "DELETE",
