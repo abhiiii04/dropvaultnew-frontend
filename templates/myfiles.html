@@ -2,143 +2,99 @@
 {% block content %}
 
 <style>
-/* ================= ROOT ================= */
-:root {
-  --sidebar-width: 240px;
-}
-
-/* ================= MAIN LAYOUT ================= */
-.main-content {
-  margin-left: var(--sidebar-width);
-  padding: 56px 64px;              /* ⬅️ closer to sidebar */
-  background: #f6f8fc;
-  min-height: 100vh;
-  width: calc(100% - var(--sidebar-width));
-  box-sizing: border-box;
-}
-
-/* IMPORTANT: do NOT center content */
 .files-page {
-  width: 100%;
-  max-width: none;                 /* ❌ remove centering limit */
-  margin: 0;                       /* ❌ remove auto margin */
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
 }
 
-/* ================= HEADER ================= */
+/* Header */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
-
 .page-title h1 {
   font-size: 32px;
   font-weight: 700;
-  margin: 0;
 }
-
 .page-title p {
   color: #6b7280;
-  margin-top: 6px;
+  margin-top: 4px;
 }
-
 .upload-btn {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: #fff;
-  padding: 12px 22px;
-  border-radius: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
   font-weight: 600;
   border: none;
   cursor: pointer;
 }
 
-/* ================= STATS ================= */
+/* Stats */
 .stats-bar {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 32px;
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 28px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  gap: 40px;
+  margin-bottom: 25px;
 }
-
-/* Keep stats aligned left like dashboard */
-.stats-bar,
-.filters,
-.file-grid,
-.page-header {
-  max-width: 1200px;
-}
-
 .stat {
   text-align: center;
 }
-
 .stat strong {
   font-size: 22px;
 }
-
 .stat span {
   display: block;
   font-size: 14px;
   color: #6b7280;
 }
 
-/* ================= FILTERS ================= */
+/* Search & filters */
 .filters {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 25px;
 }
-
 .search-box {
-  background: #f2f2f8;
-  padding: 12px 15px;
-  border-radius: 10px;
-  width: 360px;
-  border: none;
+  background: #fff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  width: 320px;
+  border: 1px solid #e5e7eb;
 }
-
 .filter-group {
   display: flex;
   gap: 12px;
 }
-
 .select {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
-  background: #fff;
 }
 
-/* ================= GRID ================= */
+/* Grid */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-/* ================= FILE CARD ================= */
+/* File Card */
 .file-card {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
 }
-
-.file-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
-}
-
-/* ================= FILE ICON ================= */
 .file-icon {
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   border-radius: 14px;
   background: #fee2e2;
   display: flex;
@@ -146,53 +102,34 @@
   justify-content: center;
   margin-bottom: 14px;
 }
-
 .file-icon img {
   width: 32px;
 }
-
-/* ================= FILE TEXT ================= */
 .file-name {
   font-weight: 600;
   margin-bottom: 6px;
-  word-break: break-word;
 }
-
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
-
-/* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
   gap: 10px;
 }
-
 .file-actions button {
   flex: 1;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
 }
-
-.btn-download {
-  background: #eef2ff;
-  color: #4338ca;
-}
-
-.btn-share {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.btn-delete {
-  background: #fee2e2;
-  color: #b91c1c;
-}
+.btn-download { background: #eef2ff; color: #4338ca; }
+.btn-share { background: #ecfdf5; color: #047857; }
+.btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
+
 
 
 
