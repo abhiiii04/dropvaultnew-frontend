@@ -2,25 +2,24 @@
 {% block content %}
 
 <style>
-/* ================= ROOT ================= */
-:root {
-  --sidebar-width: 240px;
+/* ================= RESET & LAYOUT ================= */
+* {
+  box-sizing: border-box; /* Prevents padding from breaking layout */
 }
 
-/* ================= MAIN LAYOUT ================= */
 .main-content {
-  margin-left: var(--sidebar-width);
+  /* Removed manual margin-left to prevent the 'double space' gap */
   padding: 32px 40px;
   background: #f6f8fc;
   min-height: 100vh;
-  width: calc(100% - var(--sidebar-width));
-  box-sizing: border-box;
+  width: 100%; /* Fills the remaining space next to sidebar */
 }
 
 /* Page wrapper fills space */
 .files-page {
   width: 100%;
-  max-width: none;
+  max-width: 1600px; /* Prevents content from being too stretched on huge screens */
+  margin: 0 auto;
 }
 
 /* ================= HEADER ================= */
@@ -29,6 +28,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
+  width: 100%;
 }
 
 .page-title h1 {
@@ -50,6 +50,7 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 /* ================= STATS ================= */
@@ -66,16 +67,19 @@
 
 .stat {
   text-align: center;
+  flex: 1;
 }
 
 .stat strong {
   font-size: 22px;
+  display: block;
 }
 
 .stat span {
   display: block;
   font-size: 14px;
   color: #6b7280;
+  margin-top: 4px;
 }
 
 /* ================= FILTERS ================= */
@@ -84,6 +88,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  gap: 20px;
   width: 100%;
 }
 
@@ -91,8 +96,10 @@
   background: #fff;
   padding: 12px 16px;
   border-radius: 14px;
-  width: 420px;
+  flex: 1; /* Search box takes available space */
+  max-width: 500px;
   border: 1px solid #e5e7eb;
+  outline: none;
 }
 
 .filter-group {
@@ -105,13 +112,15 @@
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  cursor: pointer;
 }
 
 /* ================= GRID ================= */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 28px;
+  /* Automatically fits cards based on available width */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
   width: 100%;
 }
 
@@ -122,6 +131,8 @@
   padding: 22px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.05);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .file-card:hover {
@@ -130,8 +141,8 @@
 }
 
 .file-icon {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   border-radius: 16px;
   background: #fee2e2;
   display: flex;
@@ -141,13 +152,14 @@
 }
 
 .file-icon img {
-  width: 34px;
+  width: 30px;
 }
 
 .file-name {
   font-weight: 600;
   margin-bottom: 6px;
-  word-break: break-word;
+  word-break: break-all;
+  font-size: 16px;
 }
 
 .file-meta {
@@ -159,37 +171,39 @@
 /* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  margin-top: auto; /* Pushes buttons to bottom of card */
 }
 
 .file-actions button {
   flex: 1;
-  padding: 11px;
+  padding: 10px;
   border-radius: 12px;
   border: none;
   cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 16px;
 }
 
-.btn-download {
-  background: #eef2ff;
-  color: #4338ca;
+.file-actions button:hover {
+  opacity: 0.8;
 }
 
-.btn-share {
-  background: #ecfdf5;
-  color: #047857;
-}
+.btn-download { background: #eef2ff; color: #4338ca; }
+.btn-share { background: #ecfdf5; color: #047857; }
+.btn-delete { background: #fee2e2; color: #b91c1c; }
 
-.btn-delete {
-  background: #fee2e2;
-  color: #b91c1c;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filters { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: none; }
+  .stats-bar { overflow-x: auto; padding: 15px; }
 }
 </style>
 
 <div class="main-content">
   <div class="files-page">
 
-    <!-- Header -->
     <div class="page-header">
       <div class="page-title">
         <h1>My Files</h1>
@@ -198,7 +212,6 @@
       <button class="upload-btn" onclick="location.href='/upload'">⬆ Upload Files</button>
     </div>
 
-    <!-- Stats -->
     <div class="stats-bar">
       <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
       <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
@@ -207,7 +220,6 @@
       <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
     </div>
 
-    <!-- Filters -->
     <div class="filters">
       <input class="search-box" placeholder="Search files...">
       <div class="filter-group">
@@ -216,9 +228,8 @@
       </div>
     </div>
 
-    <!-- Files -->
     <div class="file-grid" id="your-files-list">
-      <div>Loading...</div>
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6b7280;">Loading files...</div>
     </div>
 
   </div>
@@ -233,45 +244,51 @@ async function loadMyFiles() {
   const token = localStorage.getItem("token");
   if (!token) return location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/api/list/`, {
-    headers: { Authorization: token },
-    credentials: "include"
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/list/`, {
+      headers: { Authorization: token },
+      credentials: "include"
+    });
 
-  if (!res.ok) {
-    alert("Failed to load files");
-    return;
-  }
+    if (!res.ok) throw new Error("Failed to load");
 
-  const data = await res.json();
-  const files = data.files || data.your_files || [];
+    const data = await res.json();
+    const files = data.files || data.your_files || [];
 
-  document.getElementById("totalCount").innerText = files.length;
+    document.getElementById("totalCount").innerText = files.length;
+    // Note: You can add logic here to update imgCount, docCount etc. based on file extensions
 
-  const list = document.getElementById("your-files-list");
-  list.innerHTML = "";
+    const list = document.getElementById("your-files-list");
+    list.innerHTML = "";
 
-  if (!files.length) {
-    list.innerHTML = "<p>No files uploaded yet</p>";
-    return;
-  }
+    if (files.length === 0) {
+      list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6b7280;">
+                          No files uploaded yet. Click upload to get started.
+                        </div>`;
+      return;
+    }
 
-  files.forEach(f => {
-    list.innerHTML += `
-      <div class="file-card">
-        <div class="file-icon">
-          <img src="${FILE_ICON}">
+    files.forEach(f => {
+      const sizeMB = f.size ? (f.size / 1024 / 1024).toFixed(2) : "0.00";
+      list.innerHTML += `
+        <div class="file-card">
+          <div class="file-icon">
+            <img src="${FILE_ICON}" alt="file">
+          </div>
+          <div class="file-name" title="${f.filename}">${f.filename}</div>
+          <div class="file-meta">${sizeMB} MB</div>
+          <div class="file-actions">
+            <button title="Download" class="btn-download" onclick="downloadFile('${f.download_url || f.share_code}')">⬇</button>
+            <button title="Share" class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
+            <button title="Delete" class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
+          </div>
         </div>
-        <div class="file-name">${f.filename}</div>
-        <div class="file-meta">${(f.size / 1024 / 1024).toFixed(2)} MB</div>
-        <div class="file-actions">
-          <button class="btn-download" onclick="downloadFile('${f.download_url || f.share_code}')">⬇</button>
-          <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
-          <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
-        </div>
-      </div>
-    `;
-  });
+      `;
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById("your-files-list").innerHTML = "Error loading files.";
+  }
 }
 
 /* ================= ACTION HANDLERS ================= */
@@ -286,27 +303,36 @@ window.downloadFile = (value) => {
 
 window.shareFile = async id => {
   const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
-    method: "POST",
-    headers: { Authorization: token },
-    credentials: "include"
-  });
-  const data = await res.json();
-  await navigator.clipboard.writeText(data.share_url || "");
-  alert("🔗 Share link copied");
+  try {
+    const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+      method: "POST",
+      headers: { Authorization: token },
+      credentials: "include"
+    });
+    const data = await res.json();
+    await navigator.clipboard.writeText(data.share_url || "");
+    alert("🔗 Share link copied to clipboard");
+  } catch (err) {
+    alert("Could not create share link");
+  }
 };
 
 window.deleteFile = async id => {
   if (!confirm("Move this file to Trash?")) return;
   const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/delete/${id}/`, {
-    method: "DELETE",
-    headers: { Authorization: token },
-    credentials: "include"
-  });
-  loadMyFiles();
+  try {
+    await fetch(`${API_BASE}/api/delete/${id}/`, {
+      method: "DELETE",
+      headers: { Authorization: token },
+      credentials: "include"
+    });
+    loadMyFiles();
+  } catch (err) {
+    alert("Delete failed");
+  }
 };
 
+// Initial Load
 loadMyFiles();
 </script>
 
