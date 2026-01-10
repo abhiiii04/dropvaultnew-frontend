@@ -20,7 +20,17 @@
 </div>
 
 <script>
-const API_BASE = "https://dropvault-2.onrender.com";
+/* 
+  Uses global API_BASE already defined in base.html / api.js
+  DO NOT redeclare API_BASE here
+*/
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
 
 async function loadTrash() {
   console.log("🧹 loadTrash() called");
@@ -41,23 +51,28 @@ async function loadTrash() {
 
     console.log("📥 Trash response status:", res.status);
 
+    if (res.status === 401) {
+      alert("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      return location.href = "/login";
+    }
+
     const data = await res.json();
     console.log("📄 Trash response data:", data);
 
     const table = document.getElementById("trashTable");
 
-    if (!res.ok) {
-      table.innerHTML = `<tr><td colspan="4">Failed to load trash</td></tr>`;
-      return;
-    }
-
     if (!data.files || data.files.length === 0) {
-      table.innerHTML = `<tr><td colspan="4" style="text-align:center;">No files in trash</td></tr>`;
+      table.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;">
+            No files in trash
+          </td>
+        </tr>`;
       return;
     }
 
     table.innerHTML = "";
-
     data.files.forEach(file => {
       table.innerHTML += `
         <tr>
@@ -66,60 +81,81 @@ async function loadTrash() {
           <td>${file.days_remaining} days</td>
           <td>
             <button onclick="restoreFile('${file.id}')">♻️ Restore</button>
-            <button onclick="deleteFile('${file.id}')">🗑️ Delete Permanently</button>
+            <button onclick="permanentDelete('${file.id}')">🗑️ Delete</button>
           </td>
         </tr>
       `;
     });
 
   } catch (err) {
-    console.error("❌ Trash load error:", err);
-    document.getElementById("trashTable").innerHTML =
-      `<tr><td colspan="4">Error loading trash</td></tr>`;
+    console.error("❌ Error loading trash:", err);
+    document.getElementById("trashTable").innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center;color:red;">
+          Failed to load trash
+        </td>
+      </tr>`;
   }
 }
 
 async function restoreFile(id) {
   const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`
+  try {
+    const res = await fetch(`${API_BASE}/api/restore/${id}/`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(msg);
     }
-  });
 
-  if (!res.ok) {
-    alert("Restore failed");
-    return;
+    alert("♻️ File restored successfully");
+    loadTrash();
+
+  } catch (err) {
+    console.error("❌ Restore error:", err);
+    alert("Failed to restore file");
   }
-
-  alert("♻️ File restored");
-  loadTrash();
 }
 
-async function deleteFile(id) {
-  if (!confirm("Permanently delete this file?")) return;
+async function permanentDelete(id) {
+  if (!confirm("⚠️ Permanently delete this file?")) return;
 
   const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login";
 
-  const res = await fetch(`${API_BASE}/api/delete/${id}/`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`
+  try {
+    const res = await fetch(`${API_BASE}/api/delete/${id}/`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    console.log("🗑️ Delete status:", res.status);
+
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(msg);
     }
-  });
 
-  if (!res.ok) {
-    alert("Delete failed");
-    return;
+    alert("🗑️ File permanently deleted");
+    loadTrash();
+
+  } catch (err) {
+    console.error("❌ Delete error:", err);
+    alert("Failed to permanently delete file");
   }
-
-  alert("🗑️ File permanently deleted");
-  loadTrash();
 }
 
 document.addEventListener("DOMContentLoaded", loadTrash);
 </script>
+
 
 {% endblock %}
