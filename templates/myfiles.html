@@ -5,7 +5,6 @@
 /* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
-  --content-max: 1400px;
 }
 
 /* ================= MAIN LAYOUT ================= */
@@ -18,11 +17,10 @@
   box-sizing: border-box;
 }
 
-/* Page wrapper fills available space */
+/* Page wrapper fills space */
 .files-page {
   width: 100%;
-  max-width: var(--content-max);
-  margin: 0 auto;
+  max-width: none;
 }
 
 /* ================= HEADER ================= */
@@ -112,7 +110,7 @@
 /* ================= GRID ================= */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 28px;
   width: 100%;
 }
@@ -188,7 +186,6 @@
 }
 </style>
 
-
 <div class="main-content">
   <div class="files-page">
 
@@ -241,6 +238,11 @@ async function loadMyFiles() {
     credentials: "include"
   });
 
+  if (!res.ok) {
+    alert("Failed to load files");
+    return;
+  }
+
   const data = await res.json();
   const files = data.files || data.your_files || [];
 
@@ -257,11 +259,13 @@ async function loadMyFiles() {
   files.forEach(f => {
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon"><img src="${FILE_ICON}"></div>
+        <div class="file-icon">
+          <img src="${FILE_ICON}">
+        </div>
         <div class="file-name">${f.filename}</div>
-        <div class="file-meta">${(f.size/1024/1024).toFixed(2)} MB</div>
+        <div class="file-meta">${(f.size / 1024 / 1024).toFixed(2)} MB</div>
         <div class="file-actions">
-          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
+          <button class="btn-download" onclick="downloadFile('${f.download_url || f.share_code}')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
@@ -269,6 +273,16 @@ async function loadMyFiles() {
     `;
   });
 }
+
+/* ================= ACTION HANDLERS ================= */
+
+window.downloadFile = (value) => {
+  let url = value;
+  if (!value.startsWith("http")) {
+    url = `${API_BASE}/s/${value}/download/`;
+  }
+  window.open(url, "_blank");
+};
 
 window.shareFile = async id => {
   const token = localStorage.getItem("token");
