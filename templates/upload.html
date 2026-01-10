@@ -19,6 +19,7 @@
   margin-bottom: 25px;
 }
 
+/* Dropzone */
 .upload-dropzone {
   background: #ffffff;
   border: 2px dashed #c7cbe3;
@@ -26,7 +27,7 @@
   padding: 50px 20px;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: 0.2s ease;
 }
 
 .upload-dropzone:hover {
@@ -78,23 +79,36 @@
   opacity: 0.9;
 }
 
-.upload-types {
-  margin-top: 18px;
-  color: #6b7280;
-  font-size: 14px;
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-}
-
-.upload-types span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .hidden-input {
   display: none;
+}
+
+/* Upload list */
+.upload-list {
+  margin-top: 25px;
+}
+
+.upload-item {
+  background: #f3f4f6;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.progress {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.2s ease;
 }
 </style>
 
@@ -104,36 +118,27 @@
     Drag and drop files or click to browse from your computer
   </p>
 
-  <form id="uploadForm" enctype="multipart/form-data">
-    <div class="upload-dropzone" id="dropzone">
-      
-      <div class="upload-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0 0l-3-3m3 3l3-3" />
-        </svg>
-      </div>
-
-      <div class="upload-text">Drop files here or click to upload</div>
-      <div class="upload-hint">
-        Support for images, documents, videos, and more (up to 100MB each)
-      </div>
-
-      <button type="button" class="browse-btn" id="browseBtn">
-        ⬆ Browse Files
-      </button>
-
-      <input type="file" id="fileInput" class="hidden-input" required />
+  <div class="upload-dropzone" id="dropzone">
+    <div class="upload-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0 0l-3-3m3 3l3-3" />
+      </svg>
     </div>
-  </form>
 
-  <div class="upload-types">
-    <span>📷 Images</span>
-    <span>📄 Documents</span>
-    <span>🎥 Videos</span>
-    <span>🎵 Audio</span>
-    <span>📦 Archives</span>
+    <div class="upload-text">Drop files here or click to upload</div>
+    <div class="upload-hint">
+      Supports images, documents, videos, audio & archives (max 100MB)
+    </div>
+
+    <button type="button" class="browse-btn" id="browseBtn">
+      ⬆ Browse Files
+    </button>
+
+    <input type="file" id="fileInput" class="hidden-input" multiple />
   </div>
+
+  <div class="upload-list" id="uploadList"></div>
 </div>
 
 <script type="module">
@@ -143,10 +148,26 @@ const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const browseBtn = document.getElementById("browseBtn");
 
-browseBtn.onclick = () => fileInput.click();
-dropzone.onclick = () => fileInput.click();
+/* =========================
+   CLICK HANDLING (FIXED)
+========================= */
 
-dropzone.addEventListener("dragover", e => {
+// Browse button (STOP bubbling)
+browseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
+
+// Dropzone click
+dropzone.addEventListener("click", () => {
+  fileInput.click();
+});
+
+/* =========================
+   DRAG & DROP
+========================= */
+
+dropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
   dropzone.style.borderColor = "#6366f1";
 });
@@ -155,40 +176,60 @@ dropzone.addEventListener("dragleave", () => {
   dropzone.style.borderColor = "#c7cbe3";
 });
 
-dropzone.addEventListener("drop", e => {
+dropzone.addEventListener("drop", (e) => {
   e.preventDefault();
   dropzone.style.borderColor = "#c7cbe3";
-  fileInput.files = e.dataTransfer.files;
-  uploadFile();
+  handleFiles(e.dataTransfer.files);
 });
 
-fileInput.addEventListener("change", uploadFile);
+/* =========================
+   FILE SELECT
+========================= */
 
-async function uploadFile() {
+fileInput.addEventListener("change", () => {
+  handleFiles(fileInput.files);
+});
+
+function handleFiles(files) {
+  if (!files || !files.length) return;
+  [...files].forEach(uploadFile);
+}
+
+/* =========================
+   UPLOAD LOGIC
+========================= */
+
+async function uploadFile(file) {
   const token = localStorage.getItem("token");
-  const file = fileInput.files[0];
-  if (!file) return;
+  if (!token) {
+    alert("Session expired. Please login again.");
+    return location.href = "/login";
+  }
 
   const formData = new FormData();
   formData.append("file", file);
 
-  const options = {
-    method: "POST",
-    body: formData,
-    credentials: "include"
-  };
-
-  if (token) options.headers = { Authorization: token };
-
   try {
-    const res = await fetch(`${API_BASE}/api/upload/`, options);
-    if (!res.ok) throw new Error(await res.text());
+    const res = await fetch(`${API_BASE}/api/upload/`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`   // ✅ REQUIRED
+      },
+      body: formData,
+      credentials: "include"
+    });
 
-    alert("📁 File uploaded successfully!");
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    alert(`📁 "${file.name}" uploaded successfully`);
     window.location.href = "/myfiles";
+
   } catch (err) {
-    console.error("Upload error:", err);
-    alert("❌ Upload failed");
+    console.error("Upload failed:", err);
+    alert("❌ Upload failed. See console.");
   }
 }
 </script>
