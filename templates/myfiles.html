@@ -2,23 +2,23 @@
 {% block content %}
 
 <style>
-/* ================= ROOT LAYOUT ================= */
+/* ================= LAYOUT ================= */
 :root {
   --sidebar-width: 240px;
 }
 
 .main-content {
   margin-left: var(--sidebar-width);
-  padding: 32px 40px;
+  padding: 32px 48px;
   background: #f6f8fc;
   min-height: 100vh;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ================= PAGE ================= */
+/* ================= PAGE WRAPPER ================= */
 .files-page {
-  max-width: 1200px;
+  max-width: 1100px;
 }
 
 /* ================= HEADER ================= */
@@ -54,9 +54,9 @@
 .stats-bar {
   background: #ffffff;
   border-radius: 18px;
-  padding: 20px 30px;
+  padding: 18px 28px;
   display: flex;
-  gap: 60px;
+  justify-content: space-between;
   margin-bottom: 28px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
 }
@@ -76,14 +76,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .search-box {
   background: #fff;
   padding: 12px 16px;
   border-radius: 14px;
-  width: 320px;
+  width: 360px;
   border: 1px solid #e5e7eb;
 }
 
@@ -103,31 +103,31 @@
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+  gap: 28px;
 }
 
 /* ================= FILE CARD ================= */
 .file-card {
   background: #ffffff;
-  border-radius: 20px;
-  padding: 18px;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
   transition: transform 0.15s ease;
 }
 
 .file-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 .file-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
   background: #fee2e2;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .file-icon img {
@@ -143,13 +143,13 @@
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 /* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .file-actions button {
@@ -221,6 +221,7 @@ async function loadMyFiles() {
   const files = data.files || data.your_files || [];
 
   document.getElementById("totalCount").innerText = files.length;
+
   const list = document.getElementById("your-files-list");
   list.innerHTML = "";
 
