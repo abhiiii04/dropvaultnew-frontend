@@ -5,24 +5,23 @@
 /* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
-  --content-max: 1200px; /* same feel as dashboard */
 }
 
 /* ================= MAIN LAYOUT ================= */
 .main-content {
   margin-left: var(--sidebar-width);
-  padding: 60px 80px; /* MATCH dashboard padding */
+  padding: 56px 64px;              /* ⬅️ closer to sidebar */
   background: #f6f8fc;
   min-height: 100vh;
   width: calc(100% - var(--sidebar-width));
   box-sizing: border-box;
 }
 
-/* Page wrapper — centered like dashboard */
+/* IMPORTANT: do NOT center content */
 .files-page {
-  max-width: var(--content-max);
-  margin: 0 auto;
   width: 100%;
+  max-width: none;                 /* ❌ remove centering limit */
+  margin: 0;                       /* ❌ remove auto margin */
 }
 
 /* ================= HEADER ================= */
@@ -65,6 +64,14 @@
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
 }
 
+/* Keep stats aligned left like dashboard */
+.stats-bar,
+.filters,
+.file-grid,
+.page-header {
+  max-width: 1200px;
+}
+
 .stat {
   text-align: center;
 }
@@ -88,7 +95,7 @@
 }
 
 .search-box {
-  background: #f2f2f8; /* same as dashboard */
+  background: #f2f2f8;
   padding: 12px 15px;
   border-radius: 10px;
   width: 360px;
@@ -111,7 +118,7 @@
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px; /* tighter like dashboard */
+  gap: 24px;
 }
 
 /* ================= FILE CARD ================= */
@@ -120,11 +127,12 @@
   border-radius: 18px;
   padding: 20px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .file-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
 }
 
 /* ================= FILE ICON ================= */
@@ -185,6 +193,7 @@
   color: #b91c1c;
 }
 </style>
+
 
 
 <div class="main-content">
