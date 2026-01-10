@@ -98,7 +98,7 @@ async function permanentDelete(id) {
   if (!confirm("⚠️ Permanently delete this file?")) return;
 
   try {
-    const res = await fetch(`${API_BASE}/api/delete/${id}/`, {
+    const res = await fetch(`${API_BASE}/api/trash/permanent/${id}/`, {
       method: "DELETE",
       credentials: "include"
     });
