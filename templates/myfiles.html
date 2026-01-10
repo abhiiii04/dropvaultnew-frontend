@@ -2,48 +2,175 @@
 {% block content %}
 
 <style>
-.files-wrapper {
-  max-width: 750px;
-  margin: 40px auto;
-  padding: 10px 20px;
+/* ===== Page Layout ===== */
+.files-page {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
-.section-title {
-  font-size: 28px;
-  font-weight: 700;
+
+/* ===== Header ===== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 25px;
 }
-.file-list {
-  list-style: none;
-  padding: 0;
+.page-title h1 {
+  font-size: 32px;
+  font-weight: 700;
 }
-.file-item {
+.page-title p {
+  color: #6b7280;
+  margin-top: 4px;
+}
+.upload-btn {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+/* ===== Stats ===== */
+.stats-bar {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px;
   display: flex;
+  gap: 40px;
+  margin-bottom: 25px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+.stat {
+  text-align: center;
+}
+.stat strong {
+  font-size: 22px;
+}
+.stat span {
+  display: block;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ===== Filters ===== */
+.filters {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  background: #f3f3f8;
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 25px;
+}
+.search-box {
+  background: #fff;
+  padding: 12px 14px;
+  border-radius: 14px;
+  width: 320px;
+  border: 1px solid #e5e7eb;
+}
+.filter-group {
+  display: flex;
+  gap: 12px;
+}
+.select {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+/* ===== File Grid ===== */
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+/* ===== File Card ===== */
+.file-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.05);
 }
 .file-icon {
-  width: 28px;
-  margin-right: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.file-icon img {
+  width: 34px;
+}
+.file-name {
+  font-weight: 600;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+.file-meta {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 14px;
 }
 .file-actions {
-  margin-left: auto;
   display: flex;
   gap: 10px;
 }
 .file-actions button {
-  padding: 6px 10px;
-  border-radius: 6px;
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
 }
+.btn-download { background: #eef2ff; color: #4338ca; }
+.btn-share { background: #ecfdf5; color: #047857; }
+.btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
 
-<div class="files-wrapper">
-  <h1 class="section-title">My Files</h1>
-  <ul class="file-list" id="your-files-list">
-    <li>Loading...</li>
-  </ul>
+<div class="files-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>My Files</h1>
+      <p>Manage and organize all your uploaded files</p>
+    </div>
+    <button class="upload-btn" onclick="location.href='/upload'">
+      ⬆ Upload Files
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
+    <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
+    <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
+    <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
+    <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <input class="search-box" id="searchInput" placeholder="Search files...">
+    <div class="filter-group">
+      <select class="select"><option>All Types</option></select>
+      <select class="select"><option>Date (Newest)</option></select>
+    </div>
+  </div>
+
+  <!-- Files -->
+  <div class="file-grid" id="your-files-list">
+    <div>Loading...</div>
+  </div>
+
 </div>
 
 <script type="module">
@@ -51,58 +178,52 @@ import { API_BASE } from "/static/js/api.js";
 
 const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
-async function parseResponse(res) {
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
-  if (data && data.login_required) {
-    alert(data.error || data.message || "Please login to continue");
-    window.location.href = "/login?message=" + encodeURIComponent(data.error || data.message || "Please login to continue");
-    return { authError: true, data };
-  }
-  return { authError: false, ok: res.ok, status: res.status, data };
-}
-
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return window.location.href = "/login";
-
-  const list = document.getElementById("your-files-list");
-
-  const res = await fetch(`${API_BASE}/api/list/`, {
-    headers: { "Authorization": token },
-    credentials: "include"
-  });
-
-  const parsed = await parseResponse(res);
-  if (parsed.authError) return;
-  if (!parsed.ok) {
-    alert(parsed.data.message || "Failed to load files");
-    list.innerHTML = "<li>No files uploaded yet</li>";
+  if (!token) {
+    window.location.href = "/login";
     return;
   }
 
-  const data = parsed.data;
+  const res = await fetch(`${API_BASE}/api/list/`, {
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    alert("Failed to load files");
+    return;
+  }
+
+  const data = await res.json();
   const files = data.files || data.your_files || [];
+  const list = document.getElementById("your-files-list");
+
+  document.getElementById("totalCount").innerText = files.length;
 
   list.innerHTML = "";
 
   if (!files.length) {
-    list.innerHTML = "<li>No files uploaded yet</li>";
+    list.innerHTML = "<p>No files uploaded yet</p>";
     return;
   }
 
   files.forEach(f => {
     list.innerHTML += `
-      <li class="file-item">
-        <img class="file-icon" src="${FILE_ICON}">
-        <span>${f.filename}</span>
-        <div class="file-actions">
-          <button onclick="downloadFile('${f.id}')">⬇️</button>
-          <button onclick="shareFile('${f.id}')">🔗</button>
-          <button onclick="deleteFile('${f.id}')">🗑</button>
+      <div class="file-card">
+        <div class="file-icon">
+          <img src="${FILE_ICON}">
         </div>
-      </li>
+        <div class="file-name">${f.filename}</div>
+        <div class="file-meta">
+          ${(f.size / 1024 / 1024).toFixed(2)} MB • Today
+        </div>
+        <div class="file-actions">
+          <button class="btn-download" onclick="downloadFile('${f.id}')">⬇</button>
+          <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
+          <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
+        </div>
+      </div>
     `;
   });
 }
@@ -113,97 +234,25 @@ window.downloadFile = (id) => {
 
 window.shareFile = async (id) => {
   const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/login?message=" + encodeURIComponent("Please login to continue");
-    return;
-  }
-  try {
-    const res = await fetch(`${API_BASE}/api/share/${id}/`, {
-      method: "POST",
-      headers: {
-        "Authorization": token,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ file_id: id }),
-      credentials: "include"
-    });
-
-    const parsed = await parseResponse(res);
-    if (parsed.authError) return;
-    if (!parsed.ok) { alert(parsed.data.message || "Failed to share file"); return; }
-
-    const data = parsed.data;
-    const shareUrl = data.share_url || data.url || data.link;
-    if (shareUrl) {
-      const fullUrl = shareUrl.startsWith('http') ? shareUrl : (API_BASE + shareUrl);
-      await navigator.clipboard.writeText(fullUrl);
-      alert("🔗 Share link copied!");
-      // Trigger a background fetch to /api/shared/ to ensure server has recorded the share
-      try {
-        fetch(`${API_BASE}/api/shared/`, { method: 'GET', headers: { 'Authorization': token }, credentials: 'include' })
-          .then(r => console.log('Background /api/shared/ status:', r.status))
-          .catch(e => console.warn('Background /api/shared/ fetch failed', e));
-      } catch(e) { console.warn('Background shared check failed', e); }
-    } else {
-      alert("❌ Failed to retrieve share link");
-    }
-  } catch (error) {
-    console.warn("Error sharing file:", error);
-    alert("❌ An unexpected error occurred while sharing the file.");
-  }
+  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+    method: "POST",
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+  const data = await res.json();
+  await navigator.clipboard.writeText(data.share_url || "");
+  alert("🔗 Share link copied");
 };
 
 window.deleteFile = async (id) => {
-  if (!confirm("Move this file to Trash?")) return;
+  if (!confirm("Delete this file?")) return;
   const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/login?message=" + encodeURIComponent("Please login to continue");
-    return;
-  }
-
-  try {
-    console.log('🗑️ Deleting file ID:', id);
-    const url = `${API_BASE}/api/delete/${id}/`;
-    console.log('📤 Calling:', url);
-    
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: { "Authorization": token },
-      credentials: "include"
-    });
-
-    console.log('📥 Response status:', res.status, res.statusText);
-    const text = await res.text();
-    console.log('📄 Response body:', text.substring(0, 200));
-
-    let data;
-    try { 
-      data = JSON.parse(text); 
-    } catch (_) { 
-      data = { raw: text }; 
-    }
-
-    if (res.ok) {
-      console.log('✅ File successfully deleted');
-      alert('♻️ File moved to Trash');
-      loadMyFiles();
-      return;
-    }
-
-    if (res.status === 401) {
-      console.error('❌ Unauthorized');
-      alert('Unauthorized. Please login again.');
-      return;
-    }
-
-    const errMsg = data.message || data.error || 'Failed to delete file';
-    console.error('❌ Error:', errMsg);
-    alert(`❌ ${errMsg} (status: ${res.status})`);
-
-  } catch (error) {
-    console.error('❌ Error deleting file:', error);
-    alert('❌ An unexpected error occurred while deleting the file.');
-  }
+  await fetch(`${API_BASE}/api/delete/${id}/`, {
+    method: "DELETE",
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+  loadMyFiles();
 };
 
 loadMyFiles();
