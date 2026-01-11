@@ -2,27 +2,20 @@
 {% block content %}
 
 <style>
-/* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
 }
 
-/* ================= PAGE WRAPPER ================= */
 .files-page {
   max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px;
-
-  /* 🔑 KEY FIX: shift content right */
   margin-left: calc(var(--sidebar-width) + 20px);
   box-sizing: border-box;
 }
 
-/* ================= HEADER ================= */
+/* Header */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 25px;
 }
 
@@ -36,17 +29,7 @@
   margin-top: 4px;
 }
 
-.upload-btn {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: #fff;
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-}
-
-/* ================= STATS ================= */
+/* Stats */
 .stats-bar {
   background: #ffffff;
   border-radius: 16px;
@@ -70,7 +53,7 @@
   color: #6b7280;
 }
 
-/* ================= SEARCH & FILTERS ================= */
+/* Filters */
 .filters {
   display: flex;
   justify-content: space-between;
@@ -97,14 +80,14 @@
   border: 1px solid #e5e7eb;
 }
 
-/* ================= GRID ================= */
+/* Grid */
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-/* ================= FILE CARD ================= */
+/* Card */
 .file-card {
   background: #ffffff;
   border-radius: 20px;
@@ -112,33 +95,37 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.04);
 }
 
+/* Centered icon */
 .file-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  background: #fee2e2;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
+  margin: 0 auto 14px auto;
 }
 
 .file-icon img {
-  width: 32px;
+  width: 34px;
 }
 
+/* Text */
 .file-name {
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  text-align: center;
 }
 
 .file-meta {
   font-size: 13px;
   color: #6b7280;
+  text-align: center;
   margin-bottom: 14px;
 }
 
-/* ================= ACTIONS ================= */
+/* Actions */
 .file-actions {
   display: flex;
   gap: 10px;
@@ -152,25 +139,10 @@
   cursor: pointer;
 }
 
-.btn-download {
-  background: #eef2ff;
-  color: #4338ca;
-}
-
-.btn-share {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.btn-delete {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
+.btn-download { background: #eef2ff; color: #4338ca; }
+.btn-share { background: #ecfdf5; color: #047857; }
+.btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
-
-
-
 
 <div class="main-content">
   <div class="files-page">
@@ -181,7 +153,6 @@
         <h1>My Files</h1>
         <p>Manage and organize all your uploaded files</p>
       </div>
-      <button class="upload-btn" onclick="location.href='/upload'">⬆ Upload Files</button>
     </div>
 
     <!-- Stats -->
@@ -190,7 +161,6 @@
       <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
       <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
       <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
-      <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
     </div>
 
     <!-- Filters -->
@@ -213,7 +183,29 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-const FILE_ICON = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+const ICONS = {
+  image: "https://cdn-icons-png.flaticon.com/512/337/337940.png",
+  pdf: "https://cdn-icons-png.flaticon.com/512/337/337946.png",
+  video: "https://cdn-icons-png.flaticon.com/512/337/337948.png",
+  default: "https://cdn-icons-png.flaticon.com/512/833/833524.png"
+};
+
+function getFileType(filename) {
+  const ext = filename.split(".").pop().toLowerCase();
+  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return "image";
+  if (["mp4","mov","avi","mkv"].includes(ext)) return "video";
+  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return "pdf";
+  return "default";
+}
+
+function formatSize(bytes) {
+  return (bytes / 1024 / 1024).toFixed(2) + " MB";
+}
+
+function formatDate(date) {
+  if (!date) return "Unknown date";
+  return new Date(date).toLocaleDateString();
+}
 
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
@@ -225,9 +217,9 @@ async function loadMyFiles() {
   });
 
   const data = await res.json();
-  const files = data.files || data.your_files || [];
+  const files = data.files || [];
 
-  document.getElementById("totalCount").innerText = files.length;
+  let img=0, doc=0, vid=0;
 
   const list = document.getElementById("your-files-list");
   list.innerHTML = "";
@@ -238,19 +230,33 @@ async function loadMyFiles() {
   }
 
   files.forEach(f => {
+    const type = getFileType(f.filename);
+    if (type === "image") img++;
+    else if (type === "video") vid++;
+    else if (type === "pdf") doc++;
+
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon"><img src="${FILE_ICON}"></div>
+        <div class="file-icon">
+          <img src="${ICONS[type]}">
+        </div>
         <div class="file-name">${f.filename}</div>
-        <div class="file-meta">${(f.size/1024/1024).toFixed(2)} MB</div>
+        <div class="file-meta">
+          ${formatSize(f.size)} • ${formatDate(f.uploaded_at || f.created_at)}
+        </div>
         <div class="file-actions">
-          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/{FILE ID}/')">⬇</button>
+          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
       </div>
     `;
   });
+
+  document.getElementById("totalCount").innerText = files.length;
+  document.getElementById("imgCount").innerText = img;
+  document.getElementById("docCount").innerText = doc;
+  document.getElementById("vidCount").innerText = vid;
 }
 
 window.shareFile = async id => {
