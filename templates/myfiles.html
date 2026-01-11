@@ -244,7 +244,7 @@ async function loadMyFiles() {
         <div class="file-name">${f.filename}</div>
         <div class="file-meta">${(f.size/1024/1024).toFixed(2)} MB</div>
         <div class="file-actions">
-          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
+          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/{FILE ID}/')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
