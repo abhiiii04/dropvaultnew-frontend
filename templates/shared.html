@@ -2,14 +2,14 @@
 {% block content %}
 
 <style>
-/* Page Layout */
+
 .shared-wrapper {
   max-width: 900px;
   margin: 2px auto;
   padding: 60px 80px;
 }
 
-/* Title */
+
 .shared-title {
   font-size: 32px;
   font-weight: 700;
@@ -21,7 +21,7 @@
   margin-bottom: 20px;
 }
 
-/* Search Bar */
+
 .search-box {
   background: #f2f2f8;
   border-radius: 10px;
@@ -39,7 +39,7 @@
   font-size: 15px;
 }
 
-/* Table */
+
 .shared-table {
   width: 100%;
   border-collapse: collapse;
@@ -64,7 +64,7 @@
   border-bottom: none;
 }
 
-/* Status Badges */
+
 .badge {
   padding: 6px 12px;
   border-radius: 12px;
@@ -82,7 +82,7 @@
   color: #721c24;
 }
 
-/* Action button */
+
 .copy-btn {
   padding: 6px 10px;
   font-size: 13px;
@@ -139,7 +139,7 @@ async function loadSharedFiles() {
   
   
 
-    //  NORMALIZE RESPONSE (THIS IS THE KEY FIX)
+    
     let items = [];
     if (Array.isArray(data)) items = data;
     else if (Array.isArray(data.shared)) items = data.shared;
@@ -160,10 +160,10 @@ async function loadSharedFiles() {
     }
 
     items.forEach(file => {
-      // Parse expiry: try multiple field names
+      
       let expiryTime = file.expiry || file.expires_at || file.expires || file.expiry_date;
       
-      // If no expiry provided but file has created_at or uploaded_at, assume 24 hours from creation
+      
       if (!expiryTime && (file.created_at || file.uploaded_at || file.timestamp)) {
         const createdTime = new Date(file.created_at || file.uploaded_at || file.timestamp);
         expiryTime = new Date(createdTime.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
@@ -173,7 +173,7 @@ async function loadSharedFiles() {
       const statusClass = expired ? "badge-expired" : "badge-active";
       const statusText = expired ? "Expired" : "Active";
 
-      // Build share link
+      
       const sharePath =
         file.share_url ||
         file.url ||
@@ -184,7 +184,7 @@ async function loadSharedFiles() {
         ? (sharePath.startsWith("http") ? sharePath : `${API_BASE}${sharePath}`)
         : "";
 
-      // Format expiry display
+     
       let expiryDisplay = "No expiry";
       if (expiryTime) {
         try {

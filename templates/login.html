@@ -26,7 +26,7 @@
   </div>
 
 <script>
-// If redirected with a message (e.g. ?message=Please+login+to+continue), show it first
+
 const _params = new URLSearchParams(window.location.search);
 if (_params.get('message')) {
   try { alert(decodeURIComponent(_params.get('message'))); } catch { alert(_params.get('message')); }
@@ -44,7 +44,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-      credentials: 'include' // include cookies (for session-based auth)
+      credentials: 'include' 
     });
 
     const text = await res.text();
@@ -53,19 +53,19 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     console.log('Login response:', { status: res.status, ok: res.ok, data });
 
-    // Accept either a token (JWT) or a session-based success response
+    
     if (res.ok && (data.token || data.sessionid || data.status === 'success')) {
       if (data.token) {
         localStorage.setItem("token", data.token);
         console.log('Token stored in localStorage');
       }
       if (data.sessionid) {
-        // session cookie should be set by the server when using credentials: 'include'
+        
         console.log('Session-based login, sessionid present in response');
       }
 
       alert("Login Successful");
-      // Use replace so back button doesn't go back to login
+      
       window.location.href = "/dashboard";
       return;
     }
@@ -73,7 +73,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     alert(data.message || "❌ Login failed. Try again.");
   } catch (err) {
     console.error('Login request failed:', err);
-    // Detect typical CORS / network failure and offer guidance + optional proxy retry
+    
     if (err && err.message && err.message.includes('Failed to fetch')) {
       const tryProxy = confirm('Network or CORS error occurred when contacting the API.\n\nThis usually means the backend is not allowing your frontend origin (missing Access-Control-Allow-Origin header).\n\nWould you like to retry the request via a temporary CORS proxy (only for testing)?');
       if (tryProxy) {
@@ -83,7 +83,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
-            // Note: cookies may not be forwarded through some proxies
+            
           });
           const text2 = await proxyRes.text();
           let data2;

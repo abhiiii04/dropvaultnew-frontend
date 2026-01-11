@@ -6,7 +6,7 @@
 
   <div class="settings-grid">
 
-    <!-- PROFILE INFO -->
+    
     <section class="settings-card">
       <h2>Profile</h2>
       <form id="profileForm">
@@ -23,7 +23,7 @@
       </form>
     </section>
 
-    <!-- STORAGE -->
+    
     <section class="settings-card">
       <h2>Storage</h2>
       <div class="storage-progress">
@@ -33,7 +33,7 @@
       <button class="btn-manage">Manage Files</button>
     </section>
 
-    <!-- SECURITY -->
+   
     <section class="settings-card">
       <h2>Security</h2>
       <form id="passwordForm">
@@ -46,7 +46,7 @@
       <button id="toggle2FA" class="btn-enable">Toggle 2FA</button>
     </section>
 
-    <!-- PREFERENCES -->
+   
     <section class="settings-card">
       <h2>Preferences</h2>
       <form id="prefsForm">
@@ -71,7 +71,7 @@
 </div>
 
 
-<!-- 🚀 FRONTEND API CALLS (Render Connected) -->
+
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
@@ -79,7 +79,6 @@ const token = localStorage.getItem("token");
 if (!token) location.href = "/login";
 
 
-/* ---------------- LOAD USER DATA ---------------- */
 async function loadSettings(){
   const res = await fetch(`${API_BASE}/user/profile`, {
     headers: { "Authorization": token }
@@ -98,7 +97,7 @@ async function loadSettings(){
 loadSettings();
 
 
-/* ---------------- UPDATE PROFILE ---------------- */
+
 document.getElementById("profileForm").addEventListener("submit", async(e)=>{
   e.preventDefault();
   const username = document.getElementById("username").value;
@@ -114,7 +113,7 @@ document.getElementById("profileForm").addEventListener("submit", async(e)=>{
 });
 
 
-/* ---------------- CHANGE PASSWORD ---------------- */
+
 document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
   e.preventDefault();
   const password = document.getElementById("newPassword").value;
@@ -129,7 +128,7 @@ document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
 });
 
 
-/* ---------------- TOGGLE 2FA ---------------- */
+
 document.getElementById("toggle2FA").addEventListener("click", async()=>{
   const res = await fetch(`${API_BASE}/user/2fa/toggle`, {
     method: "POST",
@@ -141,7 +140,7 @@ document.getElementById("toggle2FA").addEventListener("click", async()=>{
 });
 
 
-/* ---------------- UPDATE PREFERENCES ---------------- */
+
 document.getElementById("prefsForm").addEventListener("submit", async(e)=>{
   e.preventDefault();
   const theme = document.getElementById("themeSelect").value;

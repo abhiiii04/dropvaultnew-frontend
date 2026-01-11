@@ -19,7 +19,7 @@
   margin-bottom: 25px;
 }
 
-/* Dropzone */
+
 .upload-dropzone {
   background: #ffffff;
   border: 2px dashed #c7cbe3;
@@ -83,7 +83,7 @@
   display: none;
 }
 
-/* Upload list */
+
 .upload-list {
   margin-top: 25px;
 }
@@ -148,24 +148,22 @@ const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const browseBtn = document.getElementById("browseBtn");
 
-/* =========================
-   CLICK HANDLING (FIXED)
-========================= */
 
-// Browse button (STOP bubbling)
+
+
+
+
 browseBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   fileInput.click();
 });
 
-// Dropzone click
+
 dropzone.addEventListener("click", () => {
   fileInput.click();
 });
 
-/* =========================
-   DRAG & DROP
-========================= */
+
 
 dropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
@@ -182,9 +180,8 @@ dropzone.addEventListener("drop", (e) => {
   handleFiles(e.dataTransfer.files);
 });
 
-/* =========================
-   FILE SELECT
-========================= */
+
+   
 
 fileInput.addEventListener("change", () => {
   handleFiles(fileInput.files);
@@ -195,9 +192,8 @@ function handleFiles(files) {
   [...files].forEach(uploadFile);
 }
 
-/* =========================
-   UPLOAD LOGIC
-========================= */
+
+   
 
 async function uploadFile(file) {
   const token = localStorage.getItem("token");
@@ -213,7 +209,7 @@ async function uploadFile(file) {
     const res = await fetch(`${API_BASE}/api/upload/`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`   // ✅ REQUIRED
+        "Authorization": `Bearer ${token}`   
       },
       body: formData,
       credentials: "include"

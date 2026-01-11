@@ -49,7 +49,6 @@ const API_BASE = "https://dropvault-2.onrender.com";
 async function loadDashboard() {
   const token = localStorage.getItem("token");
 
-  /* ---------------- USER INFO ---------------- */
   try {
     const userRes = await fetch(`${API_BASE}/api/user/`, {
       headers: token ? { "Authorization": token } : {},
@@ -66,7 +65,7 @@ async function loadDashboard() {
     console.warn("User fetch failed");
   }
 
-  /* ---------------- STORAGE (OPTIONAL) ---------------- */
+  
   try {
     const dashRes = await fetch(`${API_BASE}/dashboard/`, {
       headers: token ? { "Authorization": token } : {},
@@ -85,7 +84,7 @@ async function loadDashboard() {
     console.warn("Dashboard stats unavailable");
   }
 
-  /* ---------------- FILE LIST (MAIN SOURCE) ---------------- */
+  
   let files = [];
   try {
     const listRes = await fetch(`${API_BASE}/api/list/`, {
@@ -101,7 +100,7 @@ async function loadDashboard() {
     console.error("❌ Failed to load files");
   }
 
-  /* ---------------- RECENT UPLOADS ---------------- */
+  
   const recentUI = document.getElementById("recentUploads");
   recentUI.innerHTML = "";
 
@@ -113,7 +112,7 @@ async function loadDashboard() {
       .forEach(f => recentUI.innerHTML += `<li>${f.filename}</li>`);
   }
 
-  /* ---------------- FILE TABLE ---------------- */
+  
   const table = document.getElementById("fileTable");
   table.innerHTML = "";
 
@@ -134,7 +133,7 @@ async function loadDashboard() {
     });
   }
 
-  /* ---------------- SHARED FILE COUNT ---------------- */
+  
   try {
     const sharedRes = await fetch(`${API_BASE}/api/shared/`, {
       credentials: "include"

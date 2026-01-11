@@ -6,7 +6,7 @@
   --sidebar-width: 240px;
 }
 
-/* PAGE */
+
 .files-page {
   max-width: 1200px;
   margin: 30px auto;
@@ -15,7 +15,7 @@
   box-sizing: border-box;
 }
 
-/* HEADER */
+
 .page-header {
   margin-bottom: 25px;
 }
@@ -31,7 +31,7 @@
   margin-top: 4px;
 }
 
-/* STATS */
+
 .stats-bar {
   background: #fff;
   border-radius: 16px;
@@ -55,7 +55,7 @@
   color: #6b7280;
 }
 
-/* FILTERS */
+
 .filters {
   display: flex;
   justify-content: space-between;
@@ -71,14 +71,14 @@
   border: 1px solid #e5e7eb;
 }
 
-/* GRID */
+
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-/* CARD */
+
 .file-card {
   background: #fff;
   border-radius: 20px;
@@ -114,7 +114,7 @@
   text-align: center;
 }
 
-/* ACTIONS */
+
 .file-actions {
   display: flex;
   gap: 10px;
@@ -162,7 +162,7 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-/* ICONS */
+
 const ICONS = {
   image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
   video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
@@ -170,7 +170,7 @@ const ICONS = {
   other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
-/* HELPERS */
+
 function getIcon(filename="") {
   const ext = filename.split(".").pop().toLowerCase();
   if (["png","jpg","jpeg","gif","webp"].includes(ext)) return ICONS.image;
@@ -191,7 +191,6 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString();
 }
 
-/* SECURE DOWNLOAD */
 
 window.downloadFile = async function (id, filename) {
   const token = localStorage.getItem("token");
@@ -218,7 +217,7 @@ window.downloadFile = async function (id, filename) {
 };
 
 
-/* LOAD FILES */
+
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
   if (!token) return location.href = "/login";
