@@ -71,17 +71,6 @@
   border: 1px solid #e5e7eb;
 }
 
-.filter-group {
-  display: flex;
-  gap: 12px;
-}
-
-.select {
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-}
-
 /* GRID */
 .file-grid {
   display: grid;
@@ -146,7 +135,6 @@
 
 <div class="files-page">
 
-  <!-- HEADER -->
   <div class="page-header">
     <div class="page-title">
       <h1>My Files</h1>
@@ -154,25 +142,17 @@
     </div>
   </div>
 
-  <!-- STATS -->
   <div class="stats-bar">
     <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
     <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
     <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
     <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
-    <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
   </div>
 
-  <!-- FILTERS -->
   <div class="filters">
     <input class="search-box" placeholder="Search files...">
-    <div class="filter-group">
-      <select class="select"><option>All Types</option></select>
-      <select class="select"><option>Date (Newest)</option></select>
-    </div>
   </div>
 
-  <!-- FILES -->
   <div class="file-grid" id="your-files-list">
     <div>Loading...</div>
   </div>
@@ -184,9 +164,9 @@ import { API_BASE } from "/static/js/api.js";
 
 /* ICONS */
 const ICONS = {
-  pdf: "https://cdn-icons-png.flaticon.com/512/337/337946.png",
   image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
   video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+  doc:   "https://cdn-icons-png.flaticon.com/512/337/337946.png",
   other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
@@ -195,17 +175,12 @@ function getIcon(filename="") {
   const ext = filename.split(".").pop().toLowerCase();
   if (["png","jpg","jpeg","gif","webp"].includes(ext)) return ICONS.image;
   if (["mp4","mkv","avi","mov"].includes(ext)) return ICONS.video;
-  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return ICONS.pdf;
+  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return ICONS.doc;
   return ICONS.other;
 }
 
 function getFileSize(file) {
-  const size =
-    file.size ||
-    file.file_size ||
-    file.filesize ||
-    file.size_bytes;
-
+  const size = file.size || file.file_size || file.size_bytes;
   const num = Number(size);
   if (!num || isNaN(num)) return "Unknown size";
   return (num / 1024 / 1024).toFixed(2) + " MB";
@@ -216,6 +191,32 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString();
 }
 
+/* SECURE DOWNLOAD */
+async function downloadFile(id, filename) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_BASE}/api/download/${id}/`, {
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    alert("File not found or access denied");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* LOAD FILES */
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
   if (!token) return location.href = "/login";
@@ -241,22 +242,20 @@ async function loadMyFiles() {
   }
 
   files.forEach(f => {
-    const icon = getIcon(f.filename);
     const ext = f.filename.split(".").pop().toLowerCase();
-
     if (["png","jpg","jpeg","gif","webp"].includes(ext)) img++;
     else if (["mp4","mkv","avi","mov"].includes(ext)) vid++;
     else doc++;
 
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon"><img src="${icon}"></div>
+        <div class="file-icon"><img src="${getIcon(f.filename)}"></div>
         <div class="file-name">${f.filename}</div>
         <div class="file-meta">
           ${getFileSize(f)} • ${formatDate(f.uploaded_at || f.created_at)}
         </div>
         <div class="file-actions">
-          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
+          <button class="btn-download" onclick="downloadFile('${f.id}','${f.filename}')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
