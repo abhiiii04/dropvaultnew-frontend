@@ -256,7 +256,7 @@ async function loadMyFiles() {
           ${getFileSize(f)} • ${formatDate(f.uploaded_at || f.created_at)}
         </div>
         <div class="file-actions">
-          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${id}/')">⬇</button>
+          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
           <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
           <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
