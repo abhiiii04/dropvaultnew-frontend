@@ -6,6 +6,7 @@
   --sidebar-width: 240px;
 }
 
+/* PAGE */
 .files-page {
   max-width: 1200px;
   margin: 30px auto;
@@ -14,7 +15,7 @@
   box-sizing: border-box;
 }
 
-/* Header */
+/* HEADER */
 .page-header {
   margin-bottom: 25px;
 }
@@ -22,6 +23,7 @@
 .page-title h1 {
   font-size: 32px;
   font-weight: 700;
+  margin: 0;
 }
 
 .page-title p {
@@ -29,9 +31,9 @@
   margin-top: 4px;
 }
 
-/* Stats */
+/* STATS */
 .stats-bar {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16px;
   padding: 20px;
   display: flex;
@@ -48,12 +50,11 @@
 }
 
 .stat span {
-  display: block;
   font-size: 14px;
   color: #6b7280;
 }
 
-/* Filters */
+/* FILTERS */
 .filters {
   display: flex;
   justify-content: space-between;
@@ -80,52 +81,50 @@
   border: 1px solid #e5e7eb;
 }
 
-/* Grid */
+/* GRID */
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-/* Card */
+/* CARD */
 .file-card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 20px;
   padding: 18px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.04);
 }
 
-/* Centered icon */
 .file-icon {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 16px;
   background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 14px auto;
+  margin: 0 auto 14px;
 }
 
 .file-icon img {
-  width: 34px;
+  width: 36px;
 }
 
-/* Text */
 .file-name {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   text-align: center;
 }
 
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  text-align: center;
   margin-bottom: 14px;
+  text-align: center;
 }
 
-/* Actions */
+/* ACTIONS */
 .file-actions {
   display: flex;
   gap: 10px;
@@ -144,64 +143,71 @@
 .btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
 
-<div class="main-content">
-  <div class="files-page">
+<div class="files-page">
 
-    <!-- Header -->
-    <div class="page-header">
-      <div class="page-title">
-        <h1>My Files</h1>
-        <p>Manage and organize all your uploaded files</p>
-      </div>
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>My Files</h1>
+      <p>Manage and organize all your uploaded files</p>
     </div>
-
-    <!-- Stats -->
-    <div class="stats-bar">
-      <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
-      <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
-      <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
-      <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters">
-      <input class="search-box" placeholder="Search files...">
-      <div class="filter-group">
-        <select class="select"><option>All Types</option></select>
-        <select class="select"><option>Date (Newest)</option></select>
-      </div>
-    </div>
-
-    <!-- Files -->
-    <div class="file-grid" id="your-files-list">
-      <div>Loading...</div>
-    </div>
-
   </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat"><strong id="totalCount">0</strong><span>Total Files</span></div>
+    <div class="stat"><strong id="imgCount">0</strong><span>Images</span></div>
+    <div class="stat"><strong id="docCount">0</strong><span>Documents</span></div>
+    <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
+    <div class="stat"><strong id="shareCount">0</strong><span>Shared</span></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <input class="search-box" placeholder="Search files...">
+    <div class="filter-group">
+      <select class="select"><option>All Types</option></select>
+      <select class="select"><option>Date (Newest)</option></select>
+    </div>
+  </div>
+
+  <!-- FILES -->
+  <div class="file-grid" id="your-files-list">
+    <div>Loading...</div>
+  </div>
+
 </div>
 
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-/* ---------- ICONS ---------- */
+/* ICONS */
 const ICONS = {
-  image: "https://cdn-icons-png.flaticon.com/512/337/337940.png",
-  document: "https://cdn-icons-png.flaticon.com/512/337/337946.png",
-  video: "https://cdn-icons-png.flaticon.com/512/337/337948.png",
-  other: "https://cdn-icons-png.flaticon.com/512/833/833524.png"
+  pdf: "https://cdn-icons-png.flaticon.com/512/337/337946.png",
+  image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
+  video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+  other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
-/* ---------- HELPERS ---------- */
-function getFileType(filename) {
+/* HELPERS */
+function getIcon(filename="") {
   const ext = filename.split(".").pop().toLowerCase();
-  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return "image";
-  if (["mp4","mov","avi","mkv"].includes(ext)) return "video";
-  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return "document";
-  return "other";
+  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return ICONS.image;
+  if (["mp4","mkv","avi","mov"].includes(ext)) return ICONS.video;
+  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return ICONS.pdf;
+  return ICONS.other;
 }
 
-function formatSize(bytes = 0) {
-  return (bytes / 1024 / 1024).toFixed(2) + " MB";
+function getFileSize(file) {
+  const size =
+    file.size ||
+    file.file_size ||
+    file.filesize ||
+    file.size_bytes;
+
+  const num = Number(size);
+  if (!num || isNaN(num)) return "Unknown size";
+  return (num / 1024 / 1024).toFixed(2) + " MB";
 }
 
 function formatDate(date) {
@@ -209,13 +215,9 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString();
 }
 
-/* ---------- MAIN ---------- */
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Session expired. Please login again.");
-    return location.href = "/login";
-  }
+  if (!token) return location.href = "/login";
 
   const res = await fetch(`${API_BASE}/api/list/`, {
     headers: { Authorization: token },
@@ -223,20 +225,14 @@ async function loadMyFiles() {
   });
 
   const data = await res.json();
-  console.log("📦 /api/list response:", data);
+  const files = data.files || data.your_files || [];
 
-  /* 🔑 NORMALIZE RESPONSE */
-  let files = [];
-  if (Array.isArray(data)) files = data;
-  else if (Array.isArray(data.files)) files = data.files;
-  else if (Array.isArray(data.your_files)) files = data.your_files;
-  else if (Array.isArray(data.results)) files = data.results;
-
-  /* ---------- COUNTS ---------- */
-  let img = 0, doc = 0, vid = 0;
+  let img=0, doc=0, vid=0;
 
   const list = document.getElementById("your-files-list");
   list.innerHTML = "";
+
+  document.getElementById("totalCount").innerText = files.length;
 
   if (!files.length) {
     list.innerHTML = "<p>No files uploaded yet</p>";
@@ -244,46 +240,35 @@ async function loadMyFiles() {
   }
 
   files.forEach(f => {
-    const type = getFileType(f.filename || "");
-    if (type === "image") img++;
-    if (type === "video") vid++;
-    if (type === "document") doc++;
+    const icon = getIcon(f.filename);
+    const ext = f.filename.split(".").pop().toLowerCase();
+
+    if (["png","jpg","jpeg","gif","webp"].includes(ext)) img++;
+    else if (["mp4","mkv","avi","mov"].includes(ext)) vid++;
+    else doc++;
 
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon">
-          <img src="${ICONS[type]}" />
-        </div>
-
+        <div class="file-icon"><img src="${icon}"></div>
         <div class="file-name">${f.filename}</div>
-
         <div class="file-meta">
-          ${formatSize(f.size)} • ${formatDate(f.uploaded_at || f.created_at)}
+          ${getFileSize(f)} • ${formatDate(f.uploaded_at || f.created_at)}
         </div>
-
         <div class="file-actions">
-          <button class="btn-download"
-            onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
-
-          <button class="btn-share"
-            onclick="shareFile('${f.id}')">🔗</button>
-
-          <button class="btn-delete"
-            onclick="deleteFile('${f.id}')">🗑</button>
+          <button class="btn-download" onclick="window.open('${API_BASE}/api/download/${f.id}/')">⬇</button>
+          <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
+          <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
         </div>
       </div>
     `;
   });
 
-  /* ---------- UPDATE STATS ---------- */
-  document.getElementById("totalCount").innerText = files.length;
   document.getElementById("imgCount").innerText = img;
   document.getElementById("docCount").innerText = doc;
   document.getElementById("vidCount").innerText = vid;
 }
 
-/* ---------- ACTIONS ---------- */
-window.shareFile = async (id) => {
+window.shareFile = async id => {
   const token = localStorage.getItem("token");
   const res = await fetch(`${API_BASE}/api/share/${id}/`, {
     method: "POST",
@@ -295,7 +280,7 @@ window.shareFile = async (id) => {
   alert("🔗 Share link copied");
 };
 
-window.deleteFile = async (id) => {
+window.deleteFile = async id => {
   if (!confirm("Move this file to Trash?")) return;
   const token = localStorage.getItem("token");
   await fetch(`${API_BASE}/api/delete/${id}/`, {
