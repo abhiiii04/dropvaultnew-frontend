@@ -5,24 +5,17 @@
 /* ================= ROOT ================= */
 :root {
   --sidebar-width: 240px;
-  --content-max: 1200px;
-}
-
-/* ================= MAIN CONTENT AREA ================= */
-.main-content {
-  margin-left: var(--sidebar-width);
-  padding: 60px 80px;
-  background: #f6f8fc;
-  min-height: 100vh;
-  width: calc(100% - var(--sidebar-width));
-  box-sizing: border-box;
 }
 
 /* ================= PAGE WRAPPER ================= */
 .files-page {
-  max-width: var(--content-max);
-  width: 100%;
-  margin: 0 auto;
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+
+  /* 🔑 KEY FIX: shift content right */
+  margin-left: calc(var(--sidebar-width) + 20px);
+  box-sizing: border-box;
 }
 
 /* ================= HEADER ================= */
@@ -30,25 +23,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
 
 .page-title h1 {
   font-size: 32px;
   font-weight: 700;
-  margin: 0;
 }
 
 .page-title p {
   color: #6b7280;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .upload-btn {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: #fff;
-  padding: 12px 22px;
-  border-radius: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
   font-weight: 600;
   border: none;
   cursor: pointer;
@@ -57,12 +49,11 @@
 /* ================= STATS ================= */
 .stats-bar {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 32px;
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 28px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  gap: 40px;
+  margin-bottom: 25px;
 }
 
 .stat {
@@ -79,20 +70,20 @@
   color: #6b7280;
 }
 
-/* ================= FILTERS ================= */
+/* ================= SEARCH & FILTERS ================= */
 .filters {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 25px;
 }
 
 .search-box {
-  background: #f2f2f8;
-  padding: 12px 15px;
-  border-radius: 10px;
-  width: 360px;
-  border: none;
+  background: #fff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  width: 320px;
+  border: 1px solid #e5e7eb;
 }
 
 .filter-group {
@@ -102,36 +93,28 @@
 
 .select {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
-  background: #fff;
 }
 
-/* ================= FILE GRID ================= */
+/* ================= GRID ================= */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
 /* ================= FILE CARD ================= */
 .file-card {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
 }
 
-.file-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(0,0,0,0.08);
-}
-
-/* ================= FILE ICON ================= */
 .file-icon {
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   border-radius: 14px;
   background: #fee2e2;
   display: flex;
@@ -144,20 +127,18 @@
   width: 32px;
 }
 
-/* ================= FILE INFO ================= */
 .file-name {
   font-weight: 600;
   margin-bottom: 6px;
-  word-break: break-word;
 }
 
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
-/* ================= ACTION BUTTONS ================= */
+/* ================= ACTIONS ================= */
 .file-actions {
   display: flex;
   gap: 10px;
@@ -166,7 +147,7 @@
 .file-actions button {
   flex: 1;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
 }
@@ -185,6 +166,7 @@
   background: #fee2e2;
   color: #b91c1c;
 }
+
 </style>
 
 
