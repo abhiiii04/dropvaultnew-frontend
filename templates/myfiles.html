@@ -192,7 +192,8 @@ function formatDate(date) {
 }
 
 /* SECURE DOWNLOAD */
-async function downloadFile(id, filename) {
+
+window.downloadFile = async function (id, filename) {
   const token = localStorage.getItem("token");
 
   const res = await fetch(`${API_BASE}/api/download/${id}/`, {
@@ -214,7 +215,8 @@ async function downloadFile(id, filename) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-}
+};
+
 
 /* LOAD FILES */
 async function loadMyFiles() {
