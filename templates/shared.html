@@ -136,7 +136,26 @@ async function loadSharedFiles() {
       alert("Session expired. Please login again.");
       return window.location.href = "/login";
     }
+  
+  
+  try {
+    const sharedRes = await fetch(`${API_BASE}/api/shared/`, {
+      credentials: "include"
+    });
 
+    if (sharedRes.ok) {
+      const s = await sharedRes.json();
+      const sharedFiles =
+        Array.isArray(s) ? s :
+        s.shared || s.files || s.results || [];
+
+      document.getElementById("sharedCount").innerText =
+        `${sharedFiles.length} shared this week`;
+    }
+  } catch {
+    document.getElementById("sharedCount").innerText = "0 shared this week";
+  }
+  
     //  NORMALIZE RESPONSE (THIS IS THE KEY FIX)
     let items = [];
     if (Array.isArray(data)) items = data;
