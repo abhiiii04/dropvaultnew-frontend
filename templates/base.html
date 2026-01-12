@@ -29,12 +29,13 @@
     </div>
 
     <!-- PROFILE -->
-    <div class="profile">
-    <div class="profile-avatar">👤</div>
-    <div class="profile-info">
-      <span class="profile-name">{{ request.user.username }}</span>
-      <span class="profile-plan">Pro Plan</span>
-    </div>
+    <div class="profile-wrapper">
+      <button class="profile-btn" onclick="toggleProfileMenu()">
+        <div class="avatar">👤</div>
+        <div class="profile-info">
+          <strong id="username">John Doe</strong>
+          <span>Pro Plan</span>
+        </div>
       </button>
 
       <!-- DROPDOWN -->
