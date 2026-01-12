@@ -9,33 +9,26 @@
 
 <body>
 
-  <div class="topbar">
+  <div class="topbar-right">
 
-  <!-- SEARCH -->
-  <div class="topbar-search">
-    <span class="search-icon">🔍</span>
-    <input type="text" placeholder="Search your files..." />
+  <!-- Notification -->
+  <div class="notification">
+    🔔
+    <span class="dot"></span>
   </div>
 
-  <!-- RIGHT ACTIONS -->
-  <div class="topbar-actions">
-
-    <!-- NOTIFICATIONS -->
-    <div class="notif-wrapper">
-      <button class="notif-btn">
-        🔔
-        <span class="notif-dot"></span>
-      </button>
-    </div>
-
-    <!-- PROFILE -->
-    <div class="profile">
+  <!-- Profile -->
+  <div class="profile">
     <div class="profile-avatar">👤</div>
     <div class="profile-info">
-      <span class="profile-name">{{ request.user.username }}</span>
-      <span class="profile-plan">Pro Plan</span>
+      <span class="profile-name" id="profileName">Loading...</span>
+      <span class="profile-plan" id="profilePlan">—</span>
     </div>
-      </button>
+  </div>
+
+</div>
+
+
 
       <!-- DROPDOWN -->
       <div class="profile-menu" id="profileMenu">
@@ -82,31 +75,46 @@
     });
   </script>
 
+
 <script>
-function toggleProfileMenu() {
-  const menu = document.getElementById("profileMenu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-}
-
-document.addEventListener("click", e => {
-  if (!e.target.closest(".profile-wrapper")) {
-    const menu = document.getElementById("profileMenu");
-    if (menu) menu.style.display = "none";
+  const username = localStorage.getItem("username");
+  if (username) {
+    document.getElementById("profileName").innerText = username;
   }
-});
+</script>
 
-function goProfile() {
-  window.location.href = "/profile";
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
+
+async function loadUserProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/user/profile/`, {
+      headers: {
+        Authorization: token
+      },
+      credentials: "include"
+    });
+
+    if (!res.ok) throw new Error("Profile fetch failed");
+
+    const user = await res.json();
+
+    document.getElementById("profileName").innerText =
+      user.username || user.name || "User";
+
+    document.getElementById("profilePlan").innerText =
+      user.plan || "Free Plan";
+
+  } catch (err) {
+    console.error("❌ Profile load error:", err);
+    document.getElementById("profileName").innerText = "User";
+  }
 }
 
-function goSettings() {
-  window.location.href = "/settings";
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "/login";
-}
+loadUserProfile();
 </script>
 
 
