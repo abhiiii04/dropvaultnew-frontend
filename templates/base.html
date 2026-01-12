@@ -9,27 +9,6 @@
 
 <body>
 
-  <div class="topbar-right">
-
-  <!-- Notification -->
-  <div class="notification">
-    🔔
-    <span class="dot"></span>
-  </div>
-
-  <!-- Profile -->
-  <div class="profile">
-    <div class="profile-avatar">👤</div>
-    <div class="profile-info">
-      <span class="profile-name" id="profileName">Loading...</span>
-      <span class="profile-plan" id="profilePlan">—</span>
-    </div>
-  </div>
-
-</div>
-
-
-
       <!-- DROPDOWN -->
       <div class="profile-menu" id="profileMenu">
         <button onclick="goProfile()">👤 My Profile</button>
@@ -81,40 +60,6 @@
   if (username) {
     document.getElementById("profileName").innerText = username;
   }
-</script>
-
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
-
-async function loadUserProfile() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/user/profile/`, {
-      headers: {
-        Authorization: token
-      },
-      credentials: "include"
-    });
-
-    if (!res.ok) throw new Error("Profile fetch failed");
-
-    const user = await res.json();
-
-    document.getElementById("profileName").innerText =
-      user.username || user.name || "User";
-
-    document.getElementById("profilePlan").innerText =
-      user.plan || "Free Plan";
-
-  } catch (err) {
-    console.error("❌ Profile load error:", err);
-    document.getElementById("profileName").innerText = "User";
-  }
-}
-
-loadUserProfile();
 </script>
 
 
