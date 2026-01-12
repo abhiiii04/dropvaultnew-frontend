@@ -882,3 +882,9 @@ flash-container {
 .profile-menu button:hover {
   background: #f3f4f6;
 }
+
+.profile-name {
+  font-weight: 600;
+  color: #000000; /* BLACK */
+  font-size: 15px;
+}
