@@ -6,7 +6,7 @@
   --sidebar-width: 240px;
 }
 
-
+/* PAGE */
 .files-page {
   max-width: 1200px;
   margin: 30px auto;
@@ -15,7 +15,7 @@
   box-sizing: border-box;
 }
 
-
+/* HEADER */
 .page-header {
   margin-bottom: 25px;
 }
@@ -31,7 +31,7 @@
   margin-top: 4px;
 }
 
-
+/* STATS */
 .stats-bar {
   background: #fff;
   border-radius: 16px;
@@ -55,11 +55,8 @@
   color: #6b7280;
 }
 
-
+/* FILTER */
 .filters {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 25px;
 }
 
@@ -71,21 +68,63 @@
   border: 1px solid #e5e7eb;
 }
 
-
+/* GRID */
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
-
+/* CARD */
 .file-card {
   background: #fff;
   border-radius: 20px;
   padding: 18px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+  position: relative;
 }
 
+/* MENU */
+.file-menu {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 24px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-dropdown button {
+  display: block;
+  padding: 10px 14px;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-dropdown button:hover {
+  background: #f3f4f6;
+}
+
+/* ICON */
 .file-icon {
   width: 64px;
   height: 64px;
@@ -94,43 +133,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 14px;
+  margin: 10px auto 14px;
 }
 
 .file-icon img {
   width: 36px;
 }
 
+/* TEXT */
 .file-name {
   font-weight: 600;
-  margin-bottom: 6px;
   text-align: center;
+  margin-bottom: 6px;
 }
 
 .file-meta {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 14px;
   text-align: center;
 }
-
-
-.file-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.file-actions button {
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-download { background: #eef2ff; color: #4338ca; }
-.btn-share { background: #ecfdf5; color: #047857; }
-.btn-delete { background: #fee2e2; color: #b91c1c; }
 </style>
 
 <div class="files-page">
@@ -162,7 +183,6 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-
 const ICONS = {
   image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
   video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
@@ -170,9 +190,8 @@ const ICONS = {
   other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
-
-function getIcon(filename="") {
-  const ext = filename.split(".").pop().toLowerCase();
+function getIcon(name="") {
+  const ext = name.split(".").pop().toLowerCase();
   if (["png","jpg","jpeg","gif","webp"].includes(ext)) return ICONS.image;
   if (["mp4","mkv","avi","mov"].includes(ext)) return ICONS.video;
   if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return ICONS.doc;
@@ -180,67 +199,76 @@ function getIcon(filename="") {
 }
 
 function getFileSize(file) {
-  const size = file.size || file.file_size || file.size_bytes;
-  const num = Number(size);
-  if (!num || isNaN(num)) return "Unknown size";
-  return (num / 1024 / 1024).toFixed(2) + " MB";
+  if (file.size_bytes) {
+    return (file.size_bytes / 1024 / 1024).toFixed(2) + " MB";
+  }
+  if (file.size) return file.size;
+  return "Unknown size";
 }
 
-function formatDate(date) {
-  if (!date) return "Unknown date";
-  return new Date(date).toLocaleDateString();
+function formatDate(d) {
+  return d ? new Date(d).toLocaleDateString() : "—";
 }
 
+window.toggleMenu = id => {
+  document.querySelectorAll(".menu-dropdown").forEach(m => m.style.display = "none");
+  const menu = document.getElementById("menu-" + id);
+  menu.style.display = "block";
+};
 
-window.downloadFile = async function (id, filename) {
+window.downloadFile = async (id, name) => {
   const token = localStorage.getItem("token");
-
   const res = await fetch(`${API_BASE}/api/download/${id}/`, {
     headers: { Authorization: token },
     credentials: "include"
   });
-
-  if (!res.ok) {
-    alert("File not found or access denied");
-    return;
-  }
+  if (!res.ok) return alert("Download failed");
 
   const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
   a.click();
-  a.remove();
 };
 
+window.shareFile = async id => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
+    method: "POST",
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+  const d = await res.json();
+  await navigator.clipboard.writeText(d.share_url || "");
+  alert("Link copied");
+};
 
+window.deleteFile = async id => {
+  if (!confirm("Delete file?")) return;
+  const token = localStorage.getItem("token");
+  await fetch(`${API_BASE}/api/delete/${id}/`, {
+    method: "DELETE",
+    headers: { Authorization: token },
+    credentials: "include"
+  });
+  loadMyFiles();
+};
 
 async function loadMyFiles() {
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login";
-
   const res = await fetch(`${API_BASE}/api/list/`, {
     headers: { Authorization: token },
     credentials: "include"
   });
 
   const data = await res.json();
-  const files = data.files || data.your_files || [];
+  const files = data.your_files || data.files || [];
 
   let img=0, doc=0, vid=0;
-
   const list = document.getElementById("your-files-list");
   list.innerHTML = "";
 
   document.getElementById("totalCount").innerText = files.length;
-
-  if (!files.length) {
-    list.innerHTML = "<p>No files uploaded yet</p>";
-    return;
-  }
 
   files.forEach(f => {
     const ext = f.filename.split(".").pop().toLowerCase();
@@ -250,47 +278,36 @@ async function loadMyFiles() {
 
     list.innerHTML += `
       <div class="file-card">
-        <div class="file-icon"><img src="${getIcon(f.filename)}"></div>
+        <div class="file-menu">
+          <button class="menu-btn" onclick="toggleMenu('${f.id}')">⋮</button>
+          <div class="menu-dropdown" id="menu-${f.id}">
+            <button onclick="downloadFile('${f.id}','${f.filename}')">⬇ Download</button>
+            <button onclick="shareFile('${f.id}')">🔗 Share</button>
+            <button onclick="deleteFile('${f.id}')">🗑 Delete</button>
+          </div>
+        </div>
+
+        <div class="file-icon">
+          <img src="${getIcon(f.filename)}">
+        </div>
         <div class="file-name">${f.filename}</div>
         <div class="file-meta">
-          ${getFileSize(f)} • ${formatDate(f.uploaded_at || f.created_at)}
-        </div>
-        <div class="file-actions">
-          <button class="btn-download" onclick="downloadFile('${f.id}','${f.filename}')">⬇</button>
-          <button class="btn-share" onclick="shareFile('${f.id}')">🔗</button>
-          <button class="btn-delete" onclick="deleteFile('${f.id}')">🗑</button>
+          ${getFileSize(f)} • ${formatDate(f.uploaded_at)}
         </div>
       </div>
     `;
   });
 
-  document.getElementById("imgCount").innerText = img;
-  document.getElementById("docCount").innerText = doc;
-  document.getElementById("vidCount").innerText = vid;
+  imgCount.innerText = img;
+  docCount.innerText = doc;
+  vidCount.innerText = vid;
 }
 
-window.shareFile = async id => {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
-    method: "POST",
-    headers: { Authorization: token },
-    credentials: "include"
-  });
-  const data = await res.json();
-  await navigator.clipboard.writeText(data.share_url || "");
-  alert("🔗 Share link copied");
-};
-
-window.deleteFile = async id => {
-  if (!confirm("Move this file to Trash?")) return;
-  const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/delete/${id}/`, {
-    method: "DELETE",
-    headers: { Authorization: token },
-    credentials: "include"
-  });
-  loadMyFiles();
-};
+document.addEventListener("click", e => {
+  if (!e.target.closest(".file-menu")) {
+    document.querySelectorAll(".menu-dropdown").forEach(m => m.style.display = "none");
+  }
+});
 
 loadMyFiles();
 </script>
