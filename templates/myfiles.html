@@ -180,15 +180,15 @@ function getIcon(filename="") {
 }
 
 function getFileSize(file) {
-  const size = file.size || file.file_size || file.size_bytes;
-  const num = Number(size);
-  if (!num || isNaN(num)) return "Unknown size";
-  return (num / 1024 / 1024).toFixed(2) + " MB";
+  if (file.size_bytes) {
+    return (file.size_bytes / 1024 / 1024).toFixed(2) + " MB";
+  }
+  if (file.size) return file.size;
+  return "Unknown size";
 }
 
-function formatDate(date) {
-  if (!date) return "Unknown date";
-  return new Date(date).toLocaleDateString();
+function formatDate(d) {
+  return d ? new Date(d).toLocaleDateString() : "—";
 }
 
 
