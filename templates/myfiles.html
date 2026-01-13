@@ -2,156 +2,108 @@
 {% block content %}
 
 <style>
-:root {
-  --sidebar-width: 240px;
-}
+:root { --sidebar-width:240px; }
 
-/* PAGE */
-.files-page {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
-  margin-left: calc(var(--sidebar-width) + 20px);
-  box-sizing: border-box;
+.files-page{
+  max-width:1200px;
+  margin:30px auto;
+  padding:0 20px;
+  margin-left:calc(var(--sidebar-width) + 20px);
+  box-sizing:border-box;
 }
 
 /* HEADER */
-.page-header {
-  margin-bottom: 25px;
-}
-
-.page-title h1 {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.page-title p {
-  color: #6b7280;
-  margin-top: 4px;
-}
+.page-header{ margin-bottom:25px; }
+.page-title h1{ font-size:32px;font-weight:700;margin:0; }
+.page-title p{ color:#6b7280;margin-top:4px; }
 
 /* STATS */
-.stats-bar {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  gap: 40px;
-  margin-bottom: 25px;
+.stats-bar{
+  background:#fff;
+  border-radius:16px;
+  padding:20px;
+  display:flex;
+  gap:40px;
+  margin-bottom:25px;
 }
-
-.stat {
-  text-align: center;
-}
-
-.stat strong {
-  font-size: 22px;
-}
-
-.stat span {
-  display: block;
-  font-size: 14px;
-  color: #6b7280;
-}
+.stat{text-align:center;}
+.stat strong{font-size:22px;}
+.stat span{font-size:14px;color:#6b7280;}
 
 /* FILTER */
-.filters {
-  margin-bottom: 25px;
-}
-
-.search-box {
-  background: #fff;
-  padding: 12px 14px;
-  border-radius: 12px;
-  width: 320px;
-  border: 1px solid #e5e7eb;
+.search-box{
+  background:#fff;
+  padding:12px 14px;
+  border-radius:12px;
+  width:320px;
+  border:1px solid #e5e7eb;
+  margin-bottom:25px;
 }
 
 /* GRID */
-.file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+.file-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:24px;
 }
 
 /* CARD */
-.file-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 18px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-  position: relative;
+.file-card{
+  background:#fff;
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.04);
+  position:relative;
 }
 
 /* MENU */
-.file-menu {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.file-menu{
+  position:absolute;
+  top:12px;
+  right:12px;
 }
-
-.menu-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
+.menu-btn{
+  background:none;
+  border:none;
+  font-size:18px;
+  cursor:pointer;
 }
-
-.menu-dropdown {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 24px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-  overflow: hidden;
-  z-index: 10;
+.menu-dropdown{
+  display:none;
+  position:absolute;
+  right:0;
+  top:24px;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.12);
+  overflow:hidden;
+  z-index:10;
 }
-
-.menu-dropdown button {
-  display: block;
-  padding: 10px 14px;
-  width: 100%;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
+.menu-dropdown button{
+  width:100%;
+  padding:10px 14px;
+  border:none;
+  background:none;
+  text-align:left;
+  cursor:pointer;
 }
-
-.menu-dropdown button:hover {
-  background: #f3f4f6;
-}
+.menu-dropdown button:hover{ background:#f3f4f6; }
 
 /* ICON */
-.file-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: #f3f4f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 10px auto 14px;
+.file-icon{
+  width:64px;height:64px;
+  border-radius:16px;
+  background:#f3f4f6;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:10px auto 14px;
 }
-
-.file-icon img {
-  width: 36px;
-}
+.file-icon img{ width:36px; }
 
 /* TEXT */
-.file-name {
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-.file-meta {
-  font-size: 13px;
-  color: #6b7280;
-  text-align: center;
-}
+.file-name{ font-weight:600;text-align:center;margin-bottom:6px; }
+.file-meta{ font-size:13px;color:#6b7280;text-align:center; }
 </style>
 
 <div class="files-page">
@@ -170,9 +122,7 @@
     <div class="stat"><strong id="vidCount">0</strong><span>Videos</span></div>
   </div>
 
-  <div class="filters">
-    <input class="search-box" placeholder="Search files...">
-  </div>
+  <input class="search-box" placeholder="Search files...">
 
   <div class="file-grid" id="your-files-list">
     <div>Loading...</div>
@@ -183,100 +133,98 @@
 <script type="module">
 import { API_BASE } from "/static/js/api.js";
 
-const ICONS = {
-  image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
-  video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
-  doc:   "https://cdn-icons-png.flaticon.com/512/337/337946.png",
-  other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
+const ICONS={
+  image:"https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
+  video:"https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+  doc:"https://cdn-icons-png.flaticon.com/512/337/337946.png",
+  other:"https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
-function getIcon(name="") {
-  const ext = name.split(".").pop().toLowerCase();
-  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return ICONS.image;
-  if (["mp4","mkv","avi","mov"].includes(ext)) return ICONS.video;
-  if (["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(ext)) return ICONS.doc;
+function getIcon(name=""){
+  const e=name.split(".").pop().toLowerCase();
+  if(["png","jpg","jpeg","gif","webp"].includes(e)) return ICONS.image;
+  if(["mp4","mkv","avi","mov"].includes(e)) return ICONS.video;
+  if(["pdf","doc","docx","ppt","pptx","xls","xlsx"].includes(e)) return ICONS.doc;
   return ICONS.other;
 }
 
-function getFileSize(file) {
-  if (file.size_bytes) {
-    return (file.size_bytes / 1024 / 1024).toFixed(2) + " MB";
-  }
-  if (file.size) return file.size;
-  return "Unknown size";
+function getFileSize(f){
+  const s=f.size_bytes||f.size;
+  return s ? (s/1024/1024).toFixed(2)+" MB" : "Unknown size";
 }
 
-function formatDate(d) {
+function formatDate(d){
   return d ? new Date(d).toLocaleDateString() : "—";
 }
 
-window.toggleMenu = id => {
-  document.querySelectorAll(".menu-dropdown").forEach(m => m.style.display = "none");
-  const menu = document.getElementById("menu-" + id);
-  menu.style.display = "block";
+/* MENU */
+window.toggleMenu=id=>{
+  document.querySelectorAll(".menu-dropdown").forEach(m=>m.style.display="none");
+  document.getElementById("menu-"+id).style.display="block";
 };
 
-window.downloadFile = async (id, name) => {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/download/${id}/`, {
-    headers: { Authorization: token },
-    credentials: "include"
+/* DOWNLOAD */
+window.downloadFile=async(id,name)=>{
+  const token=localStorage.getItem("token");
+  const r=await fetch(`${API_BASE}/api/download/${id}/`,{
+    headers:{Authorization:token},
+    credentials:"include"
   });
-  if (!res.ok) return alert("Download failed");
-
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
+  if(!r.ok) return alert("Download failed");
+  const blob=await r.blob();
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
   a.click();
 };
 
-window.shareFile = async id => {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/share/${id}/`, {
-    method: "POST",
-    headers: { Authorization: token },
-    credentials: "include"
+/* SHARE */
+window.shareFile=async id=>{
+  const token=localStorage.getItem("token");
+  const r=await fetch(`${API_BASE}/api/share/${id}/`,{
+    method:"POST",
+    headers:{Authorization:token},
+    credentials:"include"
   });
-  const d = await res.json();
-  await navigator.clipboard.writeText(d.share_url || "");
-  alert("Link copied");
+  const d=await r.json();
+  await navigator.clipboard.writeText(d.share_url||"");
+  alert("🔗 Share link copied");
 };
 
-window.deleteFile = async id => {
-  if (!confirm("Delete file?")) return;
-  const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/api/delete/${id}/`, {
-    method: "DELETE",
-    headers: { Authorization: token },
-    credentials: "include"
+/* DELETE */
+window.deleteFile=async id=>{
+  if(!confirm("Delete this file?")) return;
+  const token=localStorage.getItem("token");
+  await fetch(`${API_BASE}/api/delete/${id}/`,{
+    method:"DELETE",
+    headers:{Authorization:token},
+    credentials:"include"
   });
   loadMyFiles();
 };
 
-async function loadMyFiles() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/api/list/`, {
-    headers: { Authorization: token },
-    credentials: "include"
+async function loadMyFiles(){
+  const token=localStorage.getItem("token");
+  const r=await fetch(`${API_BASE}/api/list/`,{
+    headers:{Authorization:token},
+    credentials:"include"
   });
 
-  const data = await res.json();
-  const files = data.your_files || data.files || [];
+  const data=await r.json();
+  const files=data.files||data.your_files||[];
 
-  let img=0, doc=0, vid=0;
-  const list = document.getElementById("your-files-list");
-  list.innerHTML = "";
+  let img=0,doc=0,vid=0;
+  const list=document.getElementById("your-files-list");
+  list.innerHTML="";
+  totalCount.innerText=files.length;
 
-  document.getElementById("totalCount").innerText = files.length;
-
-  files.forEach(f => {
-    const ext = f.filename.split(".").pop().toLowerCase();
-    if (["png","jpg","jpeg","gif","webp"].includes(ext)) img++;
-    else if (["mp4","mkv","avi","mov"].includes(ext)) vid++;
+  files.forEach(f=>{
+    const e=f.filename.split(".").pop().toLowerCase();
+    if(["png","jpg","jpeg","gif","webp"].includes(e)) img++;
+    else if(["mp4","mkv","avi","mov"].includes(e)) vid++;
     else doc++;
 
-    list.innerHTML += `
+    list.innerHTML+=`
       <div class="file-card">
         <div class="file-menu">
           <button class="menu-btn" onclick="toggleMenu('${f.id}')">⋮</button>
@@ -287,25 +235,22 @@ async function loadMyFiles() {
           </div>
         </div>
 
-        <div class="file-icon">
-          <img src="${getIcon(f.filename)}">
-        </div>
+        <div class="file-icon"><img src="${getIcon(f.filename)}"></div>
         <div class="file-name">${f.filename}</div>
-        <div class="file-meta">
-          ${getFileSize(f)} • ${formatDate(f.uploaded_at)}
-        </div>
+        <div class="file-meta">${getFileSize(f)} • ${formatDate(f.uploaded_at)}</div>
       </div>
     `;
   });
 
-  imgCount.innerText = img;
-  docCount.innerText = doc;
-  vidCount.innerText = vid;
+  imgCount.innerText=img;
+  docCount.innerText=doc;
+  vidCount.innerText=vid;
 }
 
-document.addEventListener("click", e => {
-  if (!e.target.closest(".file-menu")) {
-    document.querySelectorAll(".menu-dropdown").forEach(m => m.style.display = "none");
+/* CLOSE MENU ON OUTSIDE CLICK */
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".file-menu")){
+    document.querySelectorAll(".menu-dropdown").forEach(m=>m.style.display="none");
   }
 });
 
