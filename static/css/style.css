@@ -147,7 +147,7 @@ body {
 
 /* Buttons */
 .btn, button {
-  background-color: #00aaff;
+  background-color: #6366f1, #8b5cf6;
   border: none;
   color: white;
   padding: 8px 14px;
@@ -158,7 +158,7 @@ body {
 }
 
 .btn:hover, button:hover {
-  background-color: #008ed6;
+  background-color: #6366f1, #8b5cf6;
 }
 
 .btn.small {
