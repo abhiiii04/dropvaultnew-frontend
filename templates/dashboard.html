@@ -46,78 +46,105 @@
 <script>
 const API_BASE = "https://dropvault-2.onrender.com";
 
+function bytesToGB(bytes) {
+  return (bytes / 1024 / 1024 / 1024).toFixed(2);
+}
+
 async function loadDashboard() {
   const token = localStorage.getItem("token");
 
+  /* ================= USER PROFILE ================= */
   try {
-    const userRes = await fetch(`${API_BASE}/api/user/`, {
-      headers: token ? { "Authorization": token } : {},
+    const userRes = await fetch(`${API_BASE}/api/user/profile/`, {
+      headers: token ? { Authorization: token } : {},
       credentials: "include"
     });
+
     if (userRes.ok) {
       const u = await userRes.json();
       const name = u.username || u.name || u.email;
       if (name) {
-        document.getElementById("welcomeTitle").innerText = `Welcome, ${name}`;
-      }
-    }
-  } catch (e) {
-    console.warn("User fetch failed");
-  }
-
-  
-  try {
-    const dashRes = await fetch(`${API_BASE}/dashboard/`, {
-      headers: token ? { "Authorization": token } : {},
-      credentials: "include"
-    });
-
-    if (dashRes.ok) {
-      const d = await dashRes.json();
-      if (d.storage) {
-        document.getElementById("storageText").innerHTML =
-          `<strong>${d.storage.used} GB</strong> / ${d.storage.total} GB used`;
-        document.getElementById("storageBar").style.width = `${d.storage.percent}%`;
+        document.getElementById("welcomeTitle").innerText =
+          `Welcome back, ${name} 👋`;
       }
     }
   } catch {
-    console.warn("Dashboard stats unavailable");
+    console.warn("⚠️ User profile unavailable");
   }
 
-  
-  let files = [];
+  /* ================= STORAGE ================= */
   try {
-    const listRes = await fetch(`${API_BASE}/api/list/`, {
-      headers: token ? { "Authorization": token } : {},
+    const storageRes = await fetch(`${API_BASE}/api/user/storage/`, {
+      headers: token ? { Authorization: token } : {},
       credentials: "include"
     });
 
-    if (!listRes.ok) throw new Error("List failed");
+    if (storageRes.ok) {
+      const s = await storageRes.json();
 
-    const listData = await listRes.json();
-    files = listData.files || listData.your_files || listData || [];
-  } catch (e) {
+      let usedGB = 0;
+      let totalGB = 0;
+      let percent = 0;
+
+      // Case 1: already in GB
+      if (s.used !== undefined && s.total !== undefined) {
+        usedGB = Number(s.used);
+        totalGB = Number(s.total);
+        percent = s.percent ?? ((usedGB / totalGB) * 100);
+      }
+
+      // Case 2: bytes
+      if (s.used_bytes && s.total_bytes) {
+        usedGB = bytesToGB(s.used_bytes);
+        totalGB = bytesToGB(s.total_bytes);
+        percent = (s.used_bytes / s.total_bytes) * 100;
+      }
+
+      document.getElementById("storageText").innerHTML =
+        `<strong>${usedGB} GB</strong> / ${totalGB} GB used`;
+
+      document.getElementById("storageBar").style.width =
+        `${Math.min(percent, 100)}%`;
+    }
+  } catch {
+    console.warn("⚠️ Storage data unavailable");
+  }
+
+  /* ================= FILE LIST ================= */
+  let files = [];
+  try {
+    const listRes = await fetch(`${API_BASE}/api/list/`, {
+      headers: token ? { Authorization: token } : {},
+      credentials: "include"
+    });
+
+    if (listRes.ok) {
+      const listData = await listRes.json();
+      files = listData.files || listData.your_files || listData || [];
+    }
+  } catch {
     console.error("❌ Failed to load files");
   }
 
-  
+  /* ================= RECENT UPLOADS ================= */
   const recentUI = document.getElementById("recentUploads");
   recentUI.innerHTML = "";
 
   if (!files.length) {
     recentUI.innerHTML = "<li>No files uploaded yet</li>";
   } else {
-    files
-      .slice(0, 5)
-      .forEach(f => recentUI.innerHTML += `<li>${f.filename}</li>`);
+    files.slice(0, 5).forEach(f => {
+      recentUI.innerHTML += `<li>${f.filename}</li>`;
+    });
   }
 
-  
+  /* ================= FILE TABLE ================= */
   const table = document.getElementById("fileTable");
   table.innerHTML = "";
 
   if (!files.length) {
-    table.innerHTML = `<tr><td colspan="5" style="text-align:center;">No files found</td></tr>`;
+    table.innerHTML =
+      `<tr><td colspan="5" style="text-align:center;">No files found</td></tr>`;
   } else {
     files.forEach(f => {
       const url = `${API_BASE}/api/download/${f.id}/`;
@@ -127,13 +154,13 @@ async function loadDashboard() {
           <td>${f.expiry || "-"}</td>
           <td><a href="${url}" target="_blank">Open</a></td>
           <td><a href="${url}">⬇️</a></td>
-          <td></td>
+          <td>-</td>
         </tr>
       `;
     });
   }
 
-  
+  /* ================= SHARED COUNT ================= */
   try {
     const sharedRes = await fetch(`${API_BASE}/api/shared/`, {
       credentials: "include"
@@ -149,12 +176,14 @@ async function loadDashboard() {
         `${sharedFiles.length} shared this week`;
     }
   } catch {
-    document.getElementById("sharedCount").innerText = "0 shared this week";
+    document.getElementById("sharedCount").innerText =
+      "0 shared this week";
   }
 }
 
 loadDashboard();
 </script>
+
 
 
 {% endblock %}
