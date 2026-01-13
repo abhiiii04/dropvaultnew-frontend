@@ -236,18 +236,7 @@
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
-/* ============ PROFILE ============ */
-fetch(`${API}/api/user/profile/`, {
-  headers:{Authorization:token}, credentials:"include"
-})
-.then(r=>r.json())
-.then(u=>{
-  const name = u.username || u.name || u.email;
-  document.getElementById("profileName").innerText = name;
-  document.getElementById("avatar").innerText = name[0].toUpperCase();
-  document.getElementById("welcomeTitle").innerText =
-    `Welcome back, ${name} 👋`;
-});
+
 
 /* ============ STORAGE ============ */
 fetch(`${API}/api/user/storage/`, {
@@ -310,14 +299,7 @@ fetch(`${API}/api/shared/`, {credentials:"include"})
   sharedCount.innerText=`${list.length} shared`;
 });
 
-/* ============ NOTIFICATIONS ============ */
-fetch(`${API}/api/notifications/`, {
-  headers:{Authorization:token}, credentials:"include"
-})
-.then(r=>r.json())
-.then(n=>{
-  notifCount.innerText=n.length||0;
-});
+
 </script>
 
 {% endblock %}
