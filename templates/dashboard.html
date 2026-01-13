@@ -27,12 +27,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 35px;
+  margin-bottom: 25px;
 }
 
 .search {
-  flex: 1;
-  max-width: 420px;
+  width: 420px;
   background: #fff;
   padding: 12px 16px;
   border-radius: 14px;
@@ -47,8 +46,12 @@
 
 .bell {
   position: relative;
-  font-size: 20px;
   cursor: pointer;
+}
+
+.bell svg {
+  width: 22px;
+  height: 22px;
 }
 
 .bell span {
@@ -91,7 +94,7 @@
 
 .welcome p {
   color: var(--muted);
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 /* ================= STATS ================= */
@@ -140,14 +143,7 @@
   width: 0%;
 }
 
-/* ================= RECENT FILES ================= */
-.section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
+/* ================= FILES ================= */
 .files {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
@@ -181,24 +177,32 @@
 
 <div class="dashboard">
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <input class="search" placeholder="Search your files..." />
-    <div class="top-actions">
-      <div class="bell">
-        🔔 <span id="notifCount">0</span>
-      </div>
-      <div class="profile">
-        <div class="avatar" id="avatar">U</div>
-        <strong id="profileName" style="color:#000;">User</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- WELCOME -->
+  <!-- WELCOME FIRST -->
   <div class="welcome">
     <h1 id="welcomeTitle">Welcome back 👋</h1>
     <p>Here’s what’s happening with your files today</p>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <input class="search" placeholder="Search your files..." />
+
+    <div class="top-actions">
+      <!-- NOTIFICATION -->
+      <div class="bell">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M15 17H9M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+                stroke="#111" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span id="notifCount">0</span>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="profile">
+        <div class="avatar" id="avatar">U</div>
+        <strong id="profileName" style="color:#000;">Loading...</strong>
+      </div>
+    </div>
   </div>
 
   <!-- STATS -->
@@ -217,9 +221,7 @@
   </div>
 
   <!-- RECENT FILES -->
-  <div class="section">
-    <h3>Recent Files</h3>
-  </div>
+  <h3>Recent Files</h3>
   <div class="files" id="recentFiles"></div>
 
   <!-- SHARED -->
@@ -234,32 +236,51 @@
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
-/* ================= PROFILE ================= */
-fetch(`${API}/api/user/profile/`, { headers:{Authorization:token}, credentials:"include" })
+/* ============ PROFILE ============ */
+fetch(`${API}/api/user/profile/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
 .then(r=>r.json())
 .then(u=>{
-  const name = u.username || u.name || "User";
+  const name = u.username || u.name || u.email;
   document.getElementById("profileName").innerText = name;
   document.getElementById("avatar").innerText = name[0].toUpperCase();
-  document.getElementById("welcomeTitle").innerText = `Welcome back, ${name} 👋`;
+  document.getElementById("welcomeTitle").innerText =
+    `Welcome back, ${name} 👋`;
 });
 
-/* ================= STORAGE ================= */
-fetch(`${API}/api/user/storage/`, { headers:{Authorization:token}, credentials:"include" })
+/* ============ STORAGE ============ */
+fetch(`${API}/api/user/storage/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
 .then(r=>r.json())
 .then(s=>{
-  const used = (s.used_bytes/1024/1024/1024).toFixed(2);
-  const total = (s.total_bytes/1024/1024/1024).toFixed(2);
-  document.getElementById("storageText").innerText = `${used} GB / ${total} GB`;
-  document.getElementById("storageBar").style.width = `${s.percent}%`;
+  let used=0,total=0,percent=0;
+
+  if (s.used_bytes && s.total_bytes) {
+    used=(s.used_bytes/1024/1024/1024).toFixed(2);
+    total=(s.total_bytes/1024/1024/1024).toFixed(2);
+    percent=(s.used_bytes/s.total_bytes)*100;
+  } else {
+    used=s.used||0;
+    total=s.total||0;
+    percent=s.percent||0;
+  }
+
+  document.getElementById("storageText").innerText =
+    `${used} GB / ${total} GB`;
+  document.getElementById("storageBar").style.width =
+    `${Math.min(percent,100)}%`;
 });
 
-/* ================= FILE STATS ================= */
-fetch(`${API}/api/files/`, { headers:{Authorization:token}, credentials:"include" })
+/* ============ FILE STATS ============ */
+fetch(`${API}/api/files/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
 .then(r=>r.json())
 .then(d=>{
-  const files = d.files || d.your_files || [];
-  document.getElementById("totalFiles").innerText = files.length;
+  const files=d.files||d.your_files||[];
+  totalFiles.innerText=files.length;
 
   let img=0,doc=0,vid=0;
   files.forEach(f=>{
@@ -273,29 +294,29 @@ fetch(`${API}/api/files/`, { headers:{Authorization:token}, credentials:"include
   docCount.innerText=doc;
   videoCount.innerText=vid;
 
-  document.getElementById("recentFiles").innerHTML =
-    files.slice(0,4).map(f=>`
-      <div class="file">
-        <strong>${f.filename}</strong>
-        <span>${(f.size_bytes/1024/1024).toFixed(2)} MB</span>
-      </div>
-    `).join("");
+  recentFiles.innerHTML=files.slice(0,4).map(f=>`
+    <div class="file">
+      <strong>${f.filename}</strong>
+      <span>${(f.size_bytes/1024/1024).toFixed(2)} MB</span>
+    </div>
+  `).join("");
 });
 
-/* ================= SHARED ================= */
-fetch(`${API}/api/shared/`, { credentials:"include" })
+/* ============ SHARED ============ */
+fetch(`${API}/api/shared/`, {credentials:"include"})
 .then(r=>r.json())
 .then(s=>{
-  const list = Array.isArray(s)?s:(s.shared||[]);
-  document.getElementById("sharedCount").innerText =
-    `${list.length} shared`;
+  const list=Array.isArray(s)?s:(s.shared||[]);
+  sharedCount.innerText=`${list.length} shared`;
 });
 
-/* ================= NOTIFICATIONS ================= */
-fetch(`${API}/api/notifications/`, { headers:{Authorization:token}, credentials:"include" })
+/* ============ NOTIFICATIONS ============ */
+fetch(`${API}/api/notifications/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
 .then(r=>r.json())
 .then(n=>{
-  document.getElementById("notifCount").innerText = n.length || 0;
+  notifCount.innerText=n.length||0;
 });
 </script>
 
