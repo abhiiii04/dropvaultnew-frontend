@@ -179,7 +179,7 @@
 
   <!-- WELCOME FIRST -->
   <div class="welcome">
-    <h1 id="welcomeTitle">Welcome to DropVault </h1>
+    <h1 id="welcomeTitle">Welcome to Drop </h1>
     <p>Secure. Simple. Yours.</p>
   </div>
 
@@ -188,8 +188,23 @@
     <input class="search" placeholder="Search your files..." />
 
     <div class="top-actions">
+      <!-- NOTIFICATION -->
+      <div class="bell">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M15 17H9M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+                stroke="#111" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span id="notifCount">0</span>
+      </div>
 
-      
+      <!-- PROFILE -->
+      <div class="profile">
+        <div class="avatar" id="avatar">U</div>
+        <strong id="profileName" style="color:#000;">Loading...</strong>
+      </div>
+    </div>
+  </div>
+
   <!-- STATS -->
   <div class="stats">
     <div class="stat-card"><h2 id="totalFiles">0</h2><span>Total Files</span></div>
@@ -221,7 +236,18 @@
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
-
+/* ============ PROFILE ============ */
+fetch(`${API}/api/user/profile/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
+.then(r=>r.json())
+.then(u=>{
+  const name = u.username || u.name || u.email;
+  document.getElementById("profileName").innerText = name;
+  document.getElementById("avatar").innerText = name[0].toUpperCase();
+  document.getElementById("welcomeTitle").innerText =
+    `Welcome back, ${name} 👋`;
+});
 
 /* ============ STORAGE ============ */
 fetch(`${API}/api/user/storage/`, {
@@ -284,7 +310,14 @@ fetch(`${API}/api/shared/`, {credentials:"include"})
   sharedCount.innerText=`${list.length} shared`;
 });
 
-
+/* ============ NOTIFICATIONS ============ */
+fetch(`${API}/api/notifications/`, {
+  headers:{Authorization:token}, credentials:"include"
+})
+.then(r=>r.json())
+.then(n=>{
+  notifCount.innerText=n.length||0;
+});
 </script>
 
 {% endblock %}
