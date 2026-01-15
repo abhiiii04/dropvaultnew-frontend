@@ -197,26 +197,37 @@
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
-/* ========= PROFILE ========= */
+
+/* ========= PROFILE (SAFE) ========= */
 fetch(`${API}/api/user/profile/`, {
-  headers:{ Authorization: token },
-  credentials:"include"
+  headers: { Authorization: token },
+  credentials: "include"
 })
 .then(r => r.ok ? r.json() : {})
-.then(u => {
+.then(data => {
+  console.log("PROFILE RESPONSE:", data); // keep for debugging
+
+  const user =
+    data.user ||
+    data.data ||
+    data.profile ||
+    data ||
+    {};
+
   const name =
-    u?.username ||
-    u?.name ||
-    u?.email ||
+    user.username ||
+    user.name ||
+    user.email ||
     "User";
 
   document.getElementById("profileName").innerText = name;
   document.getElementById("avatar").innerText =
     name.charAt(0).toUpperCase();
-
   document.getElementById("welcomeTitle").innerText =
     `Welcome, ${name}`;
 });
+
+
 
 /* ========= STORAGE ========= */
 fetch(`${API}/api/user/storage/`, {
