@@ -2,7 +2,6 @@
 {% block content %}
 
 <style>
-/* ================= ROOT ================= */
 :root {
   --primary: #6366f1;
   --accent: #8b5cf6;
@@ -13,7 +12,6 @@
   --radius: 18px;
 }
 
-/* ================= PAGE ================= */
 .dashboard {
   margin-left: 260px;
   padding: 30px 40px;
@@ -22,7 +20,7 @@
   font-family: Inter, system-ui, sans-serif;
 }
 
-/* ================= TOP BAR ================= */
+/* TOP BAR */
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -41,30 +39,9 @@
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 18px;
 }
 
-.bell {
-  position: relative;
-  cursor: pointer;
-}
-
-.bell svg {
-  width: 22px;
-  height: 22px;
-}
-
-.bell span {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 50%;
-}
-
+/* PROFILE */
 .profile {
   display: flex;
   align-items: center;
@@ -86,7 +63,7 @@
   font-weight: 700;
 }
 
-/* ================= WELCOME ================= */
+/* WELCOME */
 .welcome h1 {
   font-size: 30px;
   margin-bottom: 6px;
@@ -97,7 +74,7 @@
   margin-bottom: 20px;
 }
 
-/* ================= STATS ================= */
+/* STATS */
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
@@ -112,16 +89,10 @@
   box-shadow: 0 10px 24px rgba(0,0,0,.04);
 }
 
-.stat-card h2 {
-  font-size: 26px;
-}
+.stat-card h2 { font-size: 26px; }
+.stat-card span { color: var(--muted); font-size: 14px; }
 
-.stat-card span {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-/* ================= STORAGE ================= */
+/* STORAGE */
 .storage {
   background: var(--card);
   border-radius: var(--radius);
@@ -143,7 +114,7 @@
   width: 0%;
 }
 
-/* ================= FILES ================= */
+/* FILES */
 .files {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
@@ -166,7 +137,7 @@
   color: var(--muted);
 }
 
-/* ================= SHARED ================= */
+/* SHARED */
 .shared {
   background: var(--card);
   border-radius: var(--radius);
@@ -177,10 +148,10 @@
 
 <div class="dashboard">
 
-  <!-- WELCOME FIRST -->
+  <!-- WELCOME -->
   <div class="welcome">
-    <h1 id="welcomeTitle">Welcome to DropVault</h1>
-    <p>Secure. Simple. Yours.</p>
+    <h1 id="welcomeTitle">Welcome</h1>
+    <p>Here’s what’s happening with your files today</p>
   </div>
 
   <!-- TOP BAR -->
@@ -188,19 +159,9 @@
     <input class="search" placeholder="Search your files..." />
 
     <div class="top-actions">
-      <!-- NOTIFICATION -->
-      <div class="bell">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M15 17H9M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
-                stroke="#111" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span id="notifCount">0</span>
-      </div>
-
-      <!-- PROFILE -->
       <div class="profile">
         <div class="avatar" id="avatar">U</div>
-        <strong id="profileName" style="color:#000;">Loading...</strong>
+        <strong id="profileName" style="color:#000;">User</strong>
       </div>
     </div>
   </div>
@@ -236,22 +197,31 @@
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
-/* ============ PROFILE ============ */
+/* ========= PROFILE ========= */
 fetch(`${API}/api/user/profile/`, {
-  headers:{Authorization:token}, credentials:"include"
+  headers:{ Authorization: token },
+  credentials:"include"
 })
-.then(r=>r.json())
-.then(u=>{
-  const name = u.username || u.name || u.email;
+.then(r => r.ok ? r.json() : {})
+.then(u => {
+  const name =
+    u?.username ||
+    u?.name ||
+    u?.email ||
+    "User";
+
   document.getElementById("profileName").innerText = name;
-  document.getElementById("avatar").innerText = name[0].toUpperCase();
+  document.getElementById("avatar").innerText =
+    name.charAt(0).toUpperCase();
+
   document.getElementById("welcomeTitle").innerText =
-    `Welcome back, ${name} 👋`;
+    `Welcome, ${name}`;
 });
 
-/* ============ STORAGE ============ */
+/* ========= STORAGE ========= */
 fetch(`${API}/api/user/storage/`, {
-  headers:{Authorization:token}, credentials:"include"
+  headers:{ Authorization: token },
+  credentials:"include"
 })
 .then(r=>r.json())
 .then(s=>{
@@ -261,10 +231,6 @@ fetch(`${API}/api/user/storage/`, {
     used=(s.used_bytes/1024/1024/1024).toFixed(2);
     total=(s.total_bytes/1024/1024/1024).toFixed(2);
     percent=(s.used_bytes/s.total_bytes)*100;
-  } else {
-    used=s.used||0;
-    total=s.total||0;
-    percent=s.percent||0;
   }
 
   document.getElementById("storageText").innerText =
@@ -273,9 +239,10 @@ fetch(`${API}/api/user/storage/`, {
     `${Math.min(percent,100)}%`;
 });
 
-/* ============ FILE STATS ============ */
+/* ========= FILE STATS ========= */
 fetch(`${API}/api/files/`, {
-  headers:{Authorization:token}, credentials:"include"
+  headers:{ Authorization: token },
+  credentials:"include"
 })
 .then(r=>r.json())
 .then(d=>{
@@ -297,26 +264,17 @@ fetch(`${API}/api/files/`, {
   recentFiles.innerHTML=files.slice(0,4).map(f=>`
     <div class="file">
       <strong>${f.filename}</strong>
-      <span>${(f.size_bytes/1024/1024).toFixed(2)} MB</span>
+      <span>${((f.size_bytes||0)/1024/1024).toFixed(2)} MB</span>
     </div>
   `).join("");
 });
 
-/* ============ SHARED ============ */
-fetch(`${API}/api/shared/`, {credentials:"include"})
+/* ========= SHARED ========= */
+fetch(`${API}/api/shared/`, { credentials:"include" })
 .then(r=>r.json())
 .then(s=>{
-  const list=Array.isArray(s)?s:(s.shared||[]);
-  sharedCount.innerText=`${list.length} shared`;
-});
-
-/* ============ NOTIFICATIONS ============ */
-fetch(`${API}/api/notifications/`, {
-  headers:{Authorization:token}, credentials:"include"
-})
-.then(r=>r.json())
-.then(n=>{
-  notifCount.innerText=n.length||0;
+  const list = Array.isArray(s) ? s : (s.shared || []);
+  sharedCount.innerText = `${list.length} shared`;
 });
 </script>
 
