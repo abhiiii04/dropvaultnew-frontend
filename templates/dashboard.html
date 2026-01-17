@@ -220,8 +220,11 @@ fetch(`${API}/api/user/profile`, {
 
 /* ========= STORAGE ========= */
 fetch(`${API}/api/user/storage/`, {
-  headers:{ Authorization: token },
-  credentials:"include"
+  method: "GET",
+  headers: {
+    "Authorization": token,
+    "Accept": "application/json"
+  }
 })
 .then(r=>r.json())
 .then(s=>{
