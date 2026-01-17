@@ -194,107 +194,113 @@
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const API = "https://dropvault-2.onrender.com";
 const token = localStorage.getItem("token");
 
+/* Redirect if not logged in */
 if (!token) {
   window.location.href = "/login";
 }
 
-/* ========= COMMON HEADERS ========= */
-const authHeaders = {
-  "Authorization": `Bearer ${token}`,
-  "Accept": "application/json"
-};
-
-/* ========= PROFILE ========= */
-fetch(`${API}/api/user/profile/`, {
-  method: "GET",
-  headers: authHeaders
-})
-.then(r => {
-  if (!r.ok) throw new Error("Unauthorized");
-  return r.json();
-})
-.then(data => {
-  const user = data.user || data.data || data;
-  const name = user.username || user.name || user.email || "User";
-
-  profileName.innerText = name;
-  avatar.innerText = name[0].toUpperCase();
-  welcomeTitle.innerText = `Welcome, ${name}`;
-})
-.catch(() => {
-  localStorage.removeItem("token");
-  window.location.href = "/login";
-});
-
-
-/* ========= STORAGE ========= */
-fetch(`${API}/api/user/storage/`, {
-  method: "GET",
-  headers: authHeaders
-})
-.then(r => {
-  if (!r.ok) throw new Error("Unauthorized");
-  return r.json();
-})
-.then(s => {
-  let used = 0, total = 0, percent = 0;
-
-  if (s.used_bytes && s.total_bytes) {
-    used = (s.used_bytes / 1024 / 1024 / 1024).toFixed(2);
-    total = (s.total_bytes / 1024 / 1024 / 1024).toFixed(2);
-    percent = (s.used_bytes / s.total_bytes) * 100;
-  }
-
-  storageText.innerText = `${used} GB / ${total} GB`;
-  storageBar.style.width = `${Math.min(percent,100)}%`;
-});
-
-
-/* ========= FILE STATS ========= */
-fetch(`${API}/api/files/`, {
-  method: "GET",
-  headers: authHeaders
-})
-.then(r => r.json())
-.then(d => {
-  const files = d.files || d.your_files || [];
-  totalFiles.innerText = files.length;
-
-  let img=0, doc=0, vid=0;
-  files.forEach(f=>{
-    const e=f.filename.split(".").pop().toLowerCase();
-    if(["png","jpg","jpeg"].includes(e)) img++;
-    else if(["mp4","mov"].includes(e)) vid++;
-    else doc++;
+/* ================= SAFE AUTH FETCH ================= */
+async function authFetch(url) {
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/json"
+    }
   });
 
-  imageCount.innerText = img;
-  docCount.innerText = doc;
-  videoCount.innerText = vid;
+  if (res.status === 401 || res.status === 403) {
+    console.warn("Unauthorized – logging out");
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
 
-  recentFiles.innerHTML = files.slice(0,4).map(f=>`
-    <div class="file">
-      <strong>${f.filename}</strong>
-      <span>${((f.size_bytes||0)/1024/1024).toFixed(2)} MB</span>
-    </div>
-  `).join("");
-});
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
 
+  return res.json();
+}
 
-/* ========= SHARED ========= */
-fetch(`${API}/api/shared/`, {
-  method: "GET",
-  headers: authHeaders
-})
-.then(r => r.json())
-.then(s => {
-  const list = Array.isArray(s) ? s : (s.shared || []);
-  sharedCount.innerText = `${list.length} shared`;
-});
+/* ================= PROFILE ================= */
+authFetch(`${API}/api/user/profile/`)
+  .then(data => {
+    const user = data.user || data.data || data || {};
+    const name = user.username || user.name || user.email || "User";
+
+    document.getElementById("profileName").innerText = name;
+    document.getElementById("avatar").innerText = name[0].toUpperCase();
+    document.getElementById("welcomeTitle").innerText =
+      `Welcome, ${name}`;
+  })
+  .catch(err => console.error("Profile error:", err));
+
+/* ================= STORAGE ================= */
+authFetch(`${API}/api/user/storage/`)
+  .then(s => {
+    let used = 0, total = 0, percent = 0;
+
+    if (s.used_bytes && s.total_bytes) {
+      used = (s.used_bytes / 1024 / 1024 / 1024).toFixed(2);
+      total = (s.total_bytes / 1024 / 1024 / 1024).toFixed(2);
+      percent = (s.used_bytes / s.total_bytes) * 100;
+    } else {
+      used = s.used || 0;
+      total = s.total || 0;
+      percent = s.percent || 0;
+    }
+
+    document.getElementById("storageText").innerText =
+      `${used} GB / ${total} GB`;
+    document.getElementById("storageBar").style.width =
+      `${Math.min(percent, 100)}%`;
+  })
+  .catch(err => console.warn("Storage error:", err));
+
+/* ================= FILE STATS ================= */
+authFetch(`${API}/api/files/`)
+  .then(d => {
+    const files = d.files || d.your_files || [];
+    document.getElementById("totalFiles").innerText = files.length;
+
+    let img = 0, doc = 0, vid = 0;
+
+    files.forEach(f => {
+      const ext = f.filename.split(".").pop().toLowerCase();
+      if (["png","jpg","jpeg","gif","webp"].includes(ext)) img++;
+      else if (["mp4","mov","avi","mkv"].includes(ext)) vid++;
+      else doc++;
+    });
+
+    document.getElementById("imageCount").innerText = img;
+    document.getElementById("docCount").innerText = doc;
+    document.getElementById("videoCount").innerText = vid;
+
+    document.getElementById("recentFiles").innerHTML =
+      files.slice(0, 4).map(f => `
+        <div class="file">
+          <strong>${f.filename}</strong>
+          <span>${((f.size_bytes || 0) / 1024 / 1024).toFixed(2)} MB</span>
+        </div>
+      `).join("");
+  })
+  .catch(err => console.warn("Files error:", err));
+
+/* ================= SHARED ================= */
+authFetch(`${API}/api/shared/`)
+  .then(s => {
+    const list = Array.isArray(s) ? s : (s.shared || []);
+    document.getElementById("sharedCount").innerText =
+      `${list.length} shared`;
+  })
+  .catch(err => console.warn("Shared error:", err));
 </script>
+
 
 
 {% endblock %}
