@@ -76,84 +76,150 @@
 import { API_BASE } from "/static/js/api.js";
 
 const token = localStorage.getItem("token");
-if (!token) location.href = "/login";
 
+/* ================= SAFE FETCH (SESSION + JWT) ================= */
+async function apiFetch(url, options = {}) {
+  const headers = options.headers || {};
+  headers["Accept"] = "application/json";
 
-async function loadSettings(){
-  const res = await fetch(`${API_BASE}/user/profile`, {
-    headers: { "Authorization": token }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include" // REQUIRED for session auth
   });
-  const data = await res.json();
 
-  document.getElementById("username").value = data.username;
-  document.getElementById("email").value = data.email;
-  document.getElementById("themeSelect").value = data.theme;
-  document.getElementById("notifySelect").value = data.notifications;
+  if (res.status === 401 || res.status === 403) {
+    alert("Session expired. Please login again.");
+    location.href = "/login";
+    throw new Error("Unauthorized");
+  }
 
-  document.getElementById("storageBar").style.width = `${data.storage.percent}%`;
-  document.getElementById("usedStorage").innerText = `${data.storage.used} MB`;
-  document.getElementById("totalStorage").innerText = `${data.storage.total} MB`;
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  return res.json();
 }
+
+/* ================= LOAD SETTINGS ================= */
+async function loadSettings() {
+  try {
+    /* -------- PROFILE -------- */
+    const profile = await apiFetch(`${API_BASE}/api/user/profile/`);
+
+    document.getElementById("username").value =
+      profile.username || profile.name || "";
+
+    document.getElementById("email").value =
+      profile.email || "";
+
+    /* -------- STORAGE -------- */
+    const storage = await apiFetch(`${API_BASE}/api/user/storage/`);
+
+    let usedMB = 0;
+    let totalMB = 0;
+    let percent = 0;
+
+    if (storage.used_bytes && storage.total_bytes) {
+      usedMB = (storage.used_bytes / 1024 / 1024).toFixed(2);
+      totalMB = (storage.total_bytes / 1024 / 1024).toFixed(2);
+      percent = (storage.used_bytes / storage.total_bytes) * 100;
+    } else {
+      usedMB = storage.used || 0;
+      totalMB = storage.total || 0;
+      percent = storage.percent || 0;
+    }
+
+    document.getElementById("usedStorage").innerText = `${usedMB} MB`;
+    document.getElementById("totalStorage").innerText = `${totalMB} MB`;
+    document.getElementById("storageBar").style.width =
+      `${Math.min(percent, 100)}%`;
+
+  } catch (err) {
+    console.error("Settings load failed:", err);
+  }
+}
+
 loadSettings();
 
-
-
-document.getElementById("profileForm").addEventListener("submit", async(e)=>{
+/* ================= UPDATE PROFILE ================= */
+document.getElementById("profileForm").addEventListener("submit", async e => {
   e.preventDefault();
+
   const username = document.getElementById("username").value;
   const email = document.getElementById("email").value;
 
-  const res = await fetch(`${API_BASE}/api/user/profile/`, {
-    method: "GEt",
-    headers: { "Content-Type": "application/json", "Authorization": token },
-    body: JSON.stringify({ username, email })
-  });
+  try {
+    await apiFetch(`${API_BASE}/api/user/profile/`, {
+      method: "PUT",   // backend usually expects PUT/PATCH
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email })
+    });
 
-  alert(res.ok ? "Profile Updated ✔️" : "Update Failed ❌");
+    alert("Profile updated ✔️");
+  } catch {
+    alert("Profile update failed ❌");
+  }
 });
 
-
-
-document.getElementById("passwordForm").addEventListener("submit", async(e)=>{
+/* ================= CHANGE PASSWORD ================= */
+document.getElementById("passwordForm").addEventListener("submit", async e => {
   e.preventDefault();
+
   const password = document.getElementById("newPassword").value;
+  if (!password) return alert("Enter a password");
 
-  const res = await fetch(`${API_BASE}/user/password/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": token },
-    body: JSON.stringify({ password })
-  });
+  try {
+    await apiFetch(`${API_BASE}/api/user/password/update/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
 
-  alert(res.ok ? "Password Updated 🔒" : "Error ❌");
+    alert("Password updated 🔒");
+    e.target.reset();
+  } catch {
+    alert("Password update failed ❌");
+  }
 });
 
+/* ================= TOGGLE 2FA ================= */
+document.getElementById("toggle2FA").addEventListener("click", async () => {
+  try {
+    await apiFetch(`${API_BASE}/api/user/2fa/toggle/`, {
+      method: "POST"
+    });
 
-
-document.getElementById("toggle2FA").addEventListener("click", async()=>{
-  const res = await fetch(`${API_BASE}/user/2fa/toggle`, {
-    method: "POST",
-    headers: { "Authorization": token }
-  });
-
-  alert(res.ok ? "2FA Toggled 🔐" : "Request Failed ❌");
-  loadSettings();
+    alert("2FA toggled 🔐");
+  } catch {
+    alert("2FA request failed ❌");
+  }
 });
 
-
-
-document.getElementById("prefsForm").addEventListener("submit", async(e)=>{
+/* ================= SAVE PREFERENCES ================= */
+document.getElementById("prefsForm").addEventListener("submit", async e => {
   e.preventDefault();
+
   const theme = document.getElementById("themeSelect").value;
   const notifications = document.getElementById("notifySelect").value;
 
-  const res = await fetch(`${API_BASE}/user/preferences/update`, {
-    method: "POST",
-    headers: { "Content-Type":"application/json", "Authorization": token },
-    body: JSON.stringify({ theme, notifications })
-  });
+  try {
+    await apiFetch(`${API_BASE}/api/user/preferences/update/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme, notifications })
+    });
 
-  alert(res.ok ? "Preferences Saved 🎨" : "Update Failed ❌");
+    alert("Preferences saved 🎨");
+  } catch {
+    alert("Preferences update failed ❌");
+  }
 });
 </script>
+
 
 {% endblock %}
