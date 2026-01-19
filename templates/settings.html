@@ -1,123 +1,124 @@
 {% extends 'base.html' %}
 {% block content %}
-
 <div class="settings-container">
   <h1>Account Settings</h1>
-  <p>Manage your account, storage, security, and preferences.</p>
+  <p>Manage your account, storage, privacy, and preferences.</p>
 
   <div class="settings-grid">
 
-```
-<!-- PROFILE -->
-<section class="settings-card">
-  <h2>Profile</h2>
-  <form id="profileForm">
-    <label>Username</label>
-    <input type="text" id="username" required>
+    
+    <section class="settings-card">
+      <h2>Profile</h2>
+      <form id="profileForm">
+        <label>Username</label>
+        <input type="text" id="username" required>
 
-    <label>Email</label>
-    <input type="email" id="email" required>
+        <label>Email</label>
+        <input type="email" id="email" required>
 
-    <button type="submit" class="btn-save">Save Profile</button>
-  </form>
-</section>
+        <label>Profile Picture</label>
+        <input type="file" id="avatar">
 
-<!-- STORAGE -->
-<section class="settings-card">
-  <h2>Storage</h2>
-  <div class="storage-progress">
-    <div id="storageBar" class="progress-bar"></div>
-  </div>
-  <p>
-    <strong id="usedStorage">0 MB</strong> of
-    <strong id="totalStorage">0 MB</strong> used
-  </p>
-  <button class="btn-manage" onclick="location.href='/dashboard'">
-    Manage Files
-  </button>
-</section>
+        <button type="submit" class="btn-save">Save Profile</button>
+      </form>
+    </section>
 
-<!-- SECURITY -->
-<section class="settings-card">
-  <h2>Security</h2>
-  <form id="passwordForm">
-    <label>Change Password</label>
-    <input type="password" id="newPassword" placeholder="Enter new password">
-    <button type="submit" class="btn-save">Update Password</button>
-  </form>
+    
+    <section class="settings-card">
+      <h2>Storage</h2>
+      <div class="storage-progress">
+        <div id="storageBar" class="progress-bar" style="width: 0%;"></div>
+      </div>
+      <p><strong id="usedStorage">0 MB</strong> of <strong id="totalStorage">0 MB</strong> used</p>
+      <button class="btn-manage">Manage Files</button>
+    </section>
 
-  <br>
-  <button id="toggle2FA" class="btn-enable">Toggle 2FA</button>
-</section>
+   
+    <section class="settings-card">
+      <h2>Security</h2>
+      <form id="passwordForm">
+        <label>Change Password</label>
+        <input type="password" id="newPassword" placeholder="Enter new password">
+        <button class="btn-save" type="submit">Update Password</button>
+      </form>
 
-<!-- PREFERENCES -->
-<section class="settings-card">
-  <h2>Preferences</h2>
-  <form id="prefsForm">
-    <label>Theme</label>
-    <select id="themeSelect">
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-    </select>
+      <br>
+      <button id="toggle2FA" class="btn-enable">Toggle 2FA</button>
+    </section>
 
-    <label>Notifications</label>
-    <select id="notifySelect">
-      <option value="all">All</option>
-      <option value="important">Important Only</option>
-      <option value="none">None</option>
-    </select>
+   
+    <section class="settings-card">
+      <h2>Preferences</h2>
+      <form id="prefsForm">
+        <label>Theme</label>
+        <select id="themeSelect">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
 
-    <button type="submit" class="btn-save">Save Preferences</button>
-  </form>
-</section>
-```
+        <label>Notifications</label>
+        <select id="notifySelect">
+          <option value="all">All</option>
+          <option value="important">Important Only</option>
+          <option value="none">None</option>
+        </select>
+
+        <button type="submit" class="btn-save">Save Preferences</button>
+      </form>
+    </section>
 
   </div>
 </div>
 
-<script>
-const API = "https://dropvault-2.onrender.com";
+
+
+<script type="module">
+import { API_BASE } from "/static/js/api.js";
+
 const token = localStorage.getItem("token");
 
-if (!token) {
-  location.href = "/login";
-}
-
-/* ================= SAFE FETCH ================= */
+/* ================= SAFE FETCH (SESSION + JWT) ================= */
 async function apiFetch(url, options = {}) {
   const headers = options.headers || {};
   headers["Accept"] = "application/json";
-  headers["Authorization"] = `Bearer ${token}`;
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(url, {
     ...options,
     headers,
-    credentials: "include"
+    credentials: "include" 
   });
 
   if (res.status === 401 || res.status === 403) {
     alert("Session expired. Please login again.");
-    localStorage.removeItem("token");
     location.href = "/login";
     throw new Error("Unauthorized");
   }
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
   return res.json();
 }
 
-/* ================= LOAD PROFILE + STORAGE ================= */
+/* ================= LOAD SETTINGS ================= */
 async function loadSettings() {
   try {
-    /* PROFILE */
-    const profile = await apiFetch(`${API}/api/user/profile/`);
+    /* -------- PROFILE -------- */
+    const profile = await apiFetch(`${API_BASE}/api/user/profile/`);
+
     document.getElementById("username").value =
       profile.username || profile.name || "";
+
     document.getElementById("email").value =
       profile.email || "";
 
-    /* STORAGE */
-    const storage = await apiFetch(`${API}/api/user/storage/`);
+    /* -------- STORAGE -------- */
+    const storage = await apiFetch(`${API_BASE}/api/user/storage/`);
 
     let usedMB = 0;
     let totalMB = 0;
@@ -127,6 +128,10 @@ async function loadSettings() {
       usedMB = (storage.used_bytes / 1024 / 1024).toFixed(2);
       totalMB = (storage.total_bytes / 1024 / 1024).toFixed(2);
       percent = (storage.used_bytes / storage.total_bytes) * 100;
+    } else {
+      usedMB = storage.used || 0;
+      totalMB = storage.total || 0;
+      percent = storage.percent || 0;
     }
 
     document.getElementById("usedStorage").innerText = `${usedMB} MB`;
@@ -135,27 +140,41 @@ async function loadSettings() {
       `${Math.min(percent, 100)}%`;
 
   } catch (err) {
-    console.error("Failed to load settings:", err);
+    console.error("Settings load failed:", err);
   }
 }
 
 loadSettings();
 
-/* ================= UPDATE PROFILE (READ-ONLY BACKEND) ================= */
-document.getElementById("profileForm").addEventListener("submit", e => {
+/* ================= UPDATE PROFILE ================= */
+document.getElementById("profileForm").addEventListener("submit", async e => {
   e.preventDefault();
-  alert("Profile update is not enabled in backend yet ⚠️");
-});
 
-/* ================= PASSWORD CHANGE ================= */
-document.getElementById("passwordForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const password = document.getElementById("newPassword").value;
-
-  if (!password) return alert("Enter a new password");
+  const username = document.getElementById("username").value;
+  const email = document.getElementById("email").value;
 
   try {
-    await apiFetch(`${API}/api/reset-password/`, {
+    await apiFetch(`${API_BASE}/api/user/profile/`, {
+      method: "GET",   
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email })
+    });
+
+    alert("Profile updated ✔️");
+  } catch {
+    alert("Profile update failed ❌");
+  }
+});
+
+/* ================= CHANGE PASSWORD ================= */
+document.getElementById("passwordForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const password = document.getElementById("newPassword").value;
+  if (!password) return alert("Enter a password");
+
+  try {
+    await apiFetch(`${API_BASE}/api/reset-password/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password })
@@ -171,18 +190,36 @@ document.getElementById("passwordForm").addEventListener("submit", async e => {
 /* ================= TOGGLE 2FA ================= */
 document.getElementById("toggle2FA").addEventListener("click", async () => {
   try {
-    await apiFetch(`${API}/api/user/2fa/toggle/`, { method: "POST" });
+    await apiFetch(`${API_BASE}/api/user/2fa/toggle/`, {
+      method: "POST"
+    });
+
     alert("2FA toggled 🔐");
   } catch {
-    alert("2FA feature not enabled in backend ❌");
+    alert("2FA request failed ❌");
   }
 });
 
-/* ================= SAVE PREFERENCES (UI ONLY) ================= */
-document.getElementById("prefsForm").addEventListener("submit", e => {
+/* ================= SAVE PREFERENCES ================= */
+document.getElementById("prefsForm").addEventListener("submit", async e => {
   e.preventDefault();
-  alert("Preferences saved (UI only) 🎨");
+
+  const theme = document.getElementById("themeSelect").value;
+  const notifications = document.getElementById("notifySelect").value;
+
+  try {
+    await apiFetch(`${API_BASE}/api/user/preferences/update/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme, notifications })
+    });
+
+    alert("Preferences saved 🎨");
+  } catch {
+    alert("Preferences update failed ❌");
+  }
 });
 </script>
+
 
 {% endblock %}
