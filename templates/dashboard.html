@@ -194,10 +194,10 @@
 </div>
 
 <script>
-const API = "https://dropvault-2.onrender.com";
+const API = "https://dropvault-backend.onrender.com";
 const token = localStorage.getItem("token");
 
-// Profile
+
 fetch(`${API}/api/user/profile`, {
   method: "GET",
   headers: {
@@ -218,7 +218,6 @@ fetch(`${API}/api/user/profile`, {
 
 
 
-/* ========= STORAGE ========= */
 fetch(`${API}/api/user/storage/`, {
   method: "GET",
   headers: {
@@ -242,7 +241,7 @@ fetch(`${API}/api/user/storage/`, {
     `${Math.min(percent,100)}%`;
 });
 
-/* ========= FILE STATS ========= */
+
 fetch(`${API}/api/files/`, {
   headers:{ Authorization: token },
   credentials:"include"
@@ -272,7 +271,7 @@ fetch(`${API}/api/files/`, {
   `).join("");
 });
 
-/* ========= SHARED ========= */
+
 fetch(`${API}/api/shared/`, { credentials:"include" })
 .then(r=>r.json())
 .then(s=>{
