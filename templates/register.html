@@ -5,10 +5,12 @@
   <title>Register - DropVault</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body class="auth">
   <div class="auth-container">
-    <h2>Create an Account</h2>
+    <h2 id="formTitle">Create an Account</h2>
 
+    <!-- REGISTER FORM -->
     <form id="registerForm">
       <input type="text" id="username" placeholder="Full Name" required>
       <input type="email" id="email" placeholder="Email" required>
@@ -17,19 +19,33 @@
       <button type="submit">Sign Up</button>
     </form>
 
-    <p>Already have an account? <a href="/login">Login</a></p>
+    <!-- EMAIL VERIFICATION FORM -->
+    <form id="verifyForm" style="display:none;">
+      <p>📩 Enter the verification code sent to your email</p>
+      <input type="text" id="verificationCode" placeholder="Verification Code" required>
+      <button type="submit">Verify Email</button>
+    </form>
+
+    <p id="loginLink">Already have an account? <a href="/login">Login</a></p>
   </div>
 
 <script>
-const API_BASE = "https://dropvault-backend.onrender.com"; 
+const API_BASE = "https://dropvault-backend.onrender.com";
+let registeredEmail = "";
 
+/* ================= REGISTER ================= */
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
-  const email = document.getElementById("email").value;
+  const username = document.getElementById("username").value.trim();
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-  const confirm_password = document.getElementById("password").value;
+  const confirm_password = document.getElementById("confirm_password").value;
+
+  if (password !== confirm_password) {
+    return alert("❌ Passwords do not match");
+  }
+
   try {
     const res = await fetch(`${API_BASE}/api/signup/`, {
       method: "POST",
@@ -38,17 +54,53 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     });
 
     const data = await res.json();
-    console.log("REGISTER RESPONSE:", data);
 
     if (res.ok) {
-      alert("Registration successful! Please login.");
+      registeredEmail = email;
+
+      alert("✅ Registration successful! Check your email for verification code.");
+
+      // Switch UI
+      document.getElementById("registerForm").style.display = "none";
+      document.getElementById("verifyForm").style.display = "block";
+      document.getElementById("formTitle").innerText = "Verify Your Email";
+      document.getElementById("loginLink").style.display = "none";
+
+    } else {
+      alert(data.message || "❌ Registration failed");
+    }
+  } catch (err) {
+    alert("⚠️ Server unavailable. Try again later.");
+  }
+});
+
+/* ================= VERIFY EMAIL ================= */
+document.getElementById("verifyForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const code = document.getElementById("verificationCode").value.trim();
+  if (!code) return alert("Enter verification code");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/verify-email/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: registeredEmail,
+        code: code
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("🎉 Email verified successfully! You can now login.");
       window.location.href = "/login";
     } else {
-      alert(data.message || "❌ Email already exists.");
+      alert(data.message || "❌ Verification failed");
     }
-
-  } catch (error) {
-    alert("⚠️ Server unavailable, try again later.");
+  } catch (err) {
+    alert("⚠️ Verification server error");
   }
 });
 </script>
