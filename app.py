@@ -49,6 +49,11 @@ def login_page():
 def register_page():
     return render_template("register.html")  
 
+@app.route("/verify-email")
+def verify_email():
+    return render_template("verify-email.html")
+
+
 @app.route("/dashboard")
 def dashboard_page():
     return render_template("dashboard.html")
