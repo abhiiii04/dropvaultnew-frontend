@@ -238,7 +238,7 @@ async function apiCall(endpoint) {
 
 // ✅ Load User Profile
 async function loadProfile() {
-  const data = await apiCall("/api/user/profile/");
+  const data = await apiCall("/api/user/");
   console.log("👤 Profile data:", data);
   
   if (data && data.success) {
