@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <div class="settings-container">
   <h1>Account Settings</h1>
   <p>Manage your account, storage, privacy, and preferences.</p>
 
   <div class="settings-grid">
 
-    
+    <!-- PROFILE -->
     <section class="settings-card">
       <h2>Profile</h2>
       <form id="profileForm">
@@ -16,24 +17,25 @@
         <label>Email</label>
         <input type="email" id="email" required>
 
-        <label>Profile Picture</label>
-        <input type="file" id="avatar">
-
         <button type="submit" class="btn-save">Save Profile</button>
       </form>
     </section>
 
-    
+    <!-- STORAGE -->
     <section class="settings-card">
       <h2>Storage</h2>
       <div class="storage-progress">
-        <div id="storageBar" class="progress-bar" style="width: 0%;"></div>
+        <div id="storageBar" class="progress-bar" style="width:0%"></div>
       </div>
-      <p><strong id="usedStorage">0 MB</strong> of <strong id="totalStorage">0 MB</strong> used</p>
-      <button class="btn-manage">Manage Files</button>
+      <p>
+        <strong id="usedStorage">0 B</strong>
+        of
+        <strong id="totalStorage">0 B</strong>
+      </p>
+      <a href="/files" class="btn-manage">Manage Files</a>
     </section>
 
-   
+    <!-- SECURITY -->
     <section class="settings-card">
       <h2>Security</h2>
       <form id="passwordForm">
@@ -41,12 +43,9 @@
         <input type="password" id="newPassword" placeholder="Enter new password">
         <button class="btn-save" type="submit">Update Password</button>
       </form>
-
-      <br>
-      <button id="toggle2FA" class="btn-enable">Toggle 2FA</button>
     </section>
 
-   
+    <!-- PREFERENCES -->
     <section class="settings-card">
       <h2>Preferences</h2>
       <form id="prefsForm">
@@ -70,156 +69,112 @@
   </div>
 </div>
 
+<script>
+const API = "https://dropvault-backend.onrender.com";
 
+/* ✅ SAME TOKEN LOGIC AS DASHBOARD */
+const storedToken =
+  localStorage.getItem("token") ||
+  localStorage.getItem("authToken");
 
-<script type="module">
-import { API_BASE } from "/static/js/api.js";
+const token = storedToken
+  ? (storedToken.startsWith("Token ") ? storedToken : `Token ${storedToken}`)
+  : null;
 
-const token = localStorage.getItem("token");
+if (!token) {
+  window.location.href = "/login";
+}
 
-/* ================= SAFE FETCH (SESSION + JWT) ================= */
-async function apiFetch(url, options = {}) {
-  const headers = options.headers || {};
-  headers["Accept"] = "application/json";
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, {
+/* ✅ SHARED API CALL */
+async function apiCall(endpoint, options = {}) {
+  const res = await fetch(`${API}${endpoint}`, {
     ...options,
-    headers,
-    credentials: "include" 
+    headers: {
+      "Authorization": token,
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    credentials: "include"
   });
 
-  if (res.status === 401 || res.status === 403) {
-    alert("Session expired. Please login again.");
-    location.href = "/login";
-    throw new Error("Unauthorized");
-  }
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
+    return null;
   }
 
   return res.json();
 }
 
-/* ================= LOAD SETTINGS ================= */
-async function loadSettings() {
-  try {
-    /* -------- PROFILE -------- */
-    const profile = await apiFetch(`${API_BASE}/api/user/profile/`);
+/* ================= PROFILE ================= */
+async function loadProfile() {
+  const data = await apiCall("/api/user/");
 
+  if (data && data.success) {
+    const user = data.data || data.user || {};
     document.getElementById("username").value =
-      profile.username || profile.name || "";
-
+      user.username || user.name || "";
     document.getElementById("email").value =
-      profile.email || "";
-
-    /* -------- STORAGE -------- */
-    const storage = await apiFetch(`${API_BASE}/api/user/storage/`);
-
-    let usedMB = 0;
-    let totalMB = 0;
-    let percent = 0;
-
-    if (storage.used_bytes && storage.total_bytes) {
-      usedMB = (storage.used_bytes / 1024 / 1024).toFixed(2);
-      totalMB = (storage.total_bytes / 1024 / 1024).toFixed(2);
-      percent = (storage.used_bytes / storage.total_bytes) * 100;
-    } else {
-      usedMB = storage.used || 0;
-      totalMB = storage.total || 0;
-      percent = storage.percent || 0;
-    }
-
-    document.getElementById("usedStorage").innerText = `${usedMB} MB`;
-    document.getElementById("totalStorage").innerText = `${totalMB} MB`;
-    document.getElementById("storageBar").style.width =
-      `${Math.min(percent, 100)}%`;
-
-  } catch (err) {
-    console.error("Settings load failed:", err);
+      user.email || "";
   }
 }
 
-loadSettings();
+/* ================= STORAGE (MATCH DASHBOARD) ================= */
+async function loadStorage() {
+  const data = await apiCall("/api/user/storage/");
+
+  if (data && data.success && data.storage) {
+    const s = data.storage;
+
+    document.getElementById("usedStorage").innerText =
+      s.used_formatted || "0 B";
+
+    document.getElementById("totalStorage").innerText =
+      s.limit_formatted || "10 GB";
+
+    document.getElementById("storageBar").style.width =
+      `${Math.min(s.percentage || 0, 100)}%`;
+  }
+}
 
 /* ================= UPDATE PROFILE ================= */
 document.getElementById("profileForm").addEventListener("submit", async e => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
-  const email = document.getElementById("email").value;
-
-  try {
-    await apiFetch(`${API_BASE}/api/user/profile/`, {
-      method: "GET",   
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email })
-    });
-
-    alert("Profile updated ✔️");
-  } catch {
-    alert("Profile update failed ❌");
-  }
+  alert("Profile update endpoint not enabled yet.");
 });
 
-/* ================= CHANGE PASSWORD ================= */
+/* ================= PASSWORD ================= */
 document.getElementById("passwordForm").addEventListener("submit", async e => {
   e.preventDefault();
 
   const password = document.getElementById("newPassword").value;
   if (!password) return alert("Enter a password");
 
-  try {
-    await apiFetch(`${API_BASE}/api/reset-password/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
-    });
+  const res = await apiCall("/api/reset-password/", {
+    method: "POST",
+    body: JSON.stringify({ password })
+  });
 
+  if (res) {
     alert("Password updated 🔒");
     e.target.reset();
-  } catch {
-    alert("Password update failed ❌");
   }
 });
 
-/* ================= TOGGLE 2FA ================= */
-document.getElementById("toggle2FA").addEventListener("click", async () => {
-  try {
-    await apiFetch(`${API_BASE}/api/user/2fa/toggle/`, {
-      method: "POST"
-    });
-
-    alert("2FA toggled 🔐");
-  } catch {
-    alert("2FA request failed ❌");
-  }
-});
-
-/* ================= SAVE PREFERENCES ================= */
+/* ================= PREFERENCES ================= */
 document.getElementById("prefsForm").addEventListener("submit", async e => {
   e.preventDefault();
-
-  const theme = document.getElementById("themeSelect").value;
-  const notifications = document.getElementById("notifySelect").value;
-
-  try {
-    await apiFetch(`${API_BASE}/api/user/preferences/update/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ theme, notifications })
-    });
-
-    alert("Preferences saved 🎨");
-  } catch {
-    alert("Preferences update failed ❌");
-  }
+  alert("Preferences API not implemented yet.");
 });
-</script>
 
+/* ================= LOAD ALL ================= */
+async function loadSettings() {
+  await loadProfile();
+  await loadStorage();
+}
+
+loadSettings();
+</script>
 
 {% endblock %}
