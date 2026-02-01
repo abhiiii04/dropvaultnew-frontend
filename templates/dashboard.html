@@ -57,6 +57,17 @@
   font-weight: 700;
 }
 
+/* WELCOME */
+.welcome h1 {
+  font-size: 30px;
+  margin-bottom: 6px;
+}
+
+.welcome p {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
 /* STATS */
 .stats {
   display: grid;
@@ -97,10 +108,10 @@
   width: 0%;
 }
 
-/* FILE CARDS */
+/* FILES */
 .files {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
   gap: 20px;
 }
 
@@ -108,22 +119,26 @@
   background: var(--card);
   border-radius: var(--radius);
   padding: 18px;
-  text-align: center;
 }
 
-.file img {
-  width: 32px;
-  height: 32px;
-  margin-bottom: 8px;
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.file strong {
+.file-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.file-details strong {
   display: block;
-  margin-bottom: 6px;
+  font-size: 14px;
 }
 
-.file span {
-  font-size: 13px;
+.file-details span {
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -138,13 +153,11 @@
 
 <div class="dashboard">
 
-  <!-- WELCOME -->
   <div class="welcome">
     <h1 id="welcomeTitle">Welcome to DropVault</h1>
     <p>Secure. Simple. Yours</p>
   </div>
 
-  <!-- TOP BAR -->
   <div class="topbar">
     <input class="search" placeholder="Search your files..." />
     <div class="profile">
@@ -153,7 +166,6 @@
     </div>
   </div>
 
-  <!-- STATS -->
   <div class="stats">
     <div class="stat-card"><h2 id="totalFiles">0</h2><span>Total Files</span></div>
     <div class="stat-card"><h2 id="imageCount">0</h2><span>Images</span></div>
@@ -161,21 +173,18 @@
     <div class="stat-card"><h2 id="videoCount">0</h2><span>Videos</span></div>
   </div>
 
-  <!-- STORAGE -->
   <div class="storage">
     <strong>Storage Used</strong>
     <p id="storageText">0 B / 10 GB</p>
     <div class="bar"><div class="bar-fill" id="storageBar"></div></div>
   </div>
 
-  <!-- RECENT FILES -->
   <h3>Recent Files</h3>
   <div class="files" id="recentFiles"></div>
 
-  <!-- SHARED FILES -->
   <div class="shared">
     <h3>Shared Files</h3>
-    <div class="files" id="sharedFiles"></div>
+    <p id="sharedCount">0 shared</p>
   </div>
 
 </div>
@@ -183,7 +192,7 @@
 <script>
 const API = "https://dropvault-backend.onrender.com";
 
-/* ICONS */
+/* FILE ICONS */
 const ICONS = {
   image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
   video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
@@ -191,20 +200,11 @@ const ICONS = {
   other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
 };
 
-function getFileIcon(filename = "") {
-  const ext = filename.split(".").pop().toLowerCase();
-  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return ICONS.image;
-  if (["mp4","mov","avi","webm","mkv"].includes(ext)) return ICONS.video;
-  if (["pdf","doc","docx","xls","xlsx","ppt","pptx","txt"].includes(ext)) return ICONS.doc;
-  return ICONS.other;
-}
-
-/* TOKEN */
 const storedToken = localStorage.getItem("token") || localStorage.getItem("authToken");
 const token = storedToken ? (storedToken.startsWith("Token ") ? storedToken : `Token ${storedToken}`) : null;
-if (!token) window.location.href = "/login";
 
-/* API CALL */
+if (!token) window.location.href = "/accounts/login/";
+
 async function apiCall(endpoint) {
   const res = await fetch(`${API}${endpoint}`, {
     headers: {
@@ -213,85 +213,77 @@ async function apiCall(endpoint) {
     },
     credentials: "include"
   });
-
   if (res.status === 401) {
     localStorage.clear();
-    window.location.href = "/login";
+    window.location.href = "/accounts/login/";
     return null;
   }
   return res.json();
 }
 
-/* PROFILE */
 async function loadProfile() {
   const data = await apiCall("/api/user/");
-  if (data && data.success) {
+  if (data?.success) {
     const u = data.data || {};
     const name = u.name || u.username || "User";
-    document.getElementById("profileName").innerText = name;
-    document.getElementById("avatar").innerText = name[0].toUpperCase();
-    document.getElementById("welcomeTitle").innerText = `Welcome, ${name}`;
+    profileName.innerText = name;
+    avatar.innerText = name[0].toUpperCase();
+    welcomeTitle.innerText = `Welcome, ${name}`;
   }
 }
 
-/* STORAGE */
 async function loadStorage() {
-  const d = await apiCall("/api/user/storage/");
-  if (d && d.success) {
-    document.getElementById("storageText").innerText =
-      `${d.storage.used_formatted} / ${d.storage.limit_formatted}`;
-    document.getElementById("storageBar").style.width =
-      `${Math.min(d.storage.percentage,100)}%`;
+  const data = await apiCall("/api/user/storage/");
+  if (data?.success) {
+    storageText.innerText = `${data.storage.used_formatted} / ${data.storage.limit_formatted}`;
+    storageBar.style.width = `${data.storage.percentage}%`;
   }
 }
 
-/* FILES */
 async function loadFiles() {
-  const d = await apiCall("/api/list/");
-  if (!d) return;
+  const data = await apiCall("/api/list/");
+  if (!data) return;
 
-  const files = d.files || [];
-  document.getElementById("totalFiles").innerText = files.length;
+  const files = data.files || [];
+  totalFiles.innerText = files.length;
 
   let img=0, doc=0, vid=0;
-  files.forEach(f=>{
-    const ext = f.filename.split(".").pop().toLowerCase();
-    if (["png","jpg","jpeg","gif"].includes(ext)) img++;
-    else if (["mp4","mov","avi"].includes(ext)) vid++;
-    else doc++;
-  });
 
+  const recentHTML = files.slice(0,4).map(f=>{
+    const name = f.filename || "File";
+    const ext = name.split(".").pop().toLowerCase();
+    let icon = ICONS.other;
+
+    if (["png","jpg","jpeg","gif","svg","webp"].includes(ext)) { icon=ICONS.image; img++; }
+    else if (["mp4","mov","avi","mkv","webm"].includes(ext)) { icon=ICONS.video; vid++; }
+    else { icon=ICONS.doc; doc++; }
+
+    const size = ((f.size_bytes||0)/1024/1024).toFixed(2);
+
+    return `
+      <div class="file">
+        <div class="file-row">
+          <img src="${icon}" class="file-icon">
+          <div class="file-details">
+            <strong>${name}</strong>
+            <span>${size} MB</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  recentFiles.innerHTML = recentHTML || "<p>No files yet</p>";
   imageCount.innerText = img;
   docCount.innerText = doc;
   videoCount.innerText = vid;
-
-  recentFiles.innerHTML = files.slice(0,4).map(f=>`
-    <div class="file">
-      <img src="${getFileIcon(f.filename)}">
-      <strong>${f.filename}</strong>
-      <span>${(f.size_bytes/1024/1024).toFixed(2)} MB</span>
-    </div>
-  `).join("");
 }
 
-/* SHARED */
 async function loadShared() {
-  const d = await apiCall("/api/shared/");
-  if (!d) return;
-
-  const list = Array.isArray(d) ? d : (d.shared || []);
-  sharedFiles.innerHTML = list.length
-    ? list.slice(0,4).map(f=>`
-        <div class="file">
-          <img src="${getFileIcon(f.filename)}">
-          <strong>${f.filename}</strong>
-          <span>Shared</span>
-        </div>
-      `).join("")
-    : "<p>No shared files</p>";
+  const data = await apiCall("/api/shared/");
+  sharedCount.innerText = `${(data || []).length} shared`;
 }
 
-/* LOAD ALL */
 async function loadDashboard() {
   await loadProfile();
   await loadStorage();
