@@ -24,15 +24,24 @@
     <!-- STORAGE -->
     <section class="settings-card">
       <h2>Storage</h2>
+
       <div class="storage-progress">
         <div id="storageBar" class="progress-bar" style="width:0%"></div>
       </div>
+
       <p>
         <strong id="usedStorage">0 B</strong>
         of
         <strong id="totalStorage">0 B</strong>
       </p>
-      <a href="/files" class="btn-manage">Manage Files</a>
+
+      <!-- ✅ UPDATED BUTTON (MATCHES SAVE / UPDATE STYLE) -->
+      <button
+        type="button"
+        class="btn-save"
+        onclick="location.href='/files'">
+        Manage Files
+      </button>
     </section>
 
     <!-- SECURITY -->
@@ -140,7 +149,6 @@ async function loadStorage() {
 /* ================= UPDATE PROFILE ================= */
 document.getElementById("profileForm").addEventListener("submit", async e => {
   e.preventDefault();
-
   alert("Profile update endpoint not enabled yet.");
 });
 
