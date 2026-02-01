@@ -36,12 +36,6 @@
   border: 1px solid #e5e7eb;
 }
 
-.top-actions {
-  display: flex;
-  align-items: center;
-}
-
-/* PROFILE */
 .profile {
   display: flex;
   align-items: center;
@@ -61,17 +55,6 @@
   justify-content: center;
   color: #fff;
   font-weight: 700;
-}
-
-/* WELCOME */
-.welcome h1 {
-  font-size: 30px;
-  margin-bottom: 6px;
-}
-
-.welcome p {
-  color: var(--muted);
-  margin-bottom: 20px;
 }
 
 /* STATS */
@@ -114,10 +97,10 @@
   width: 0%;
 }
 
-/* FILES */
+/* FILE CARDS */
 .files {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
   gap: 20px;
 }
 
@@ -125,6 +108,13 @@
   background: var(--card);
   border-radius: var(--radius);
   padding: 18px;
+  text-align: center;
+}
+
+.file img {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
 }
 
 .file strong {
@@ -157,12 +147,9 @@
   <!-- TOP BAR -->
   <div class="topbar">
     <input class="search" placeholder="Search your files..." />
-
-    <div class="top-actions">
-      <div class="profile">
-        <div class="avatar" id="avatar">U</div>
-        <strong id="profileName" style="color:#000;">User</strong>
-      </div>
+    <div class="profile">
+      <div class="avatar" id="avatar">U</div>
+      <strong id="profileName">User</strong>
     </div>
   </div>
 
@@ -177,7 +164,7 @@
   <!-- STORAGE -->
   <div class="storage">
     <strong>Storage Used</strong>
-    <p id="storageText">0 GB / 0 GB</p>
+    <p id="storageText">0 B / 10 GB</p>
     <div class="bar"><div class="bar-fill" id="storageBar"></div></div>
   </div>
 
@@ -185,10 +172,10 @@
   <h3>Recent Files</h3>
   <div class="files" id="recentFiles"></div>
 
-  <!-- SHARED -->
+  <!-- SHARED FILES -->
   <div class="shared">
     <h3>Shared Files</h3>
-    <p id="sharedCount">0 shared</p>
+    <div class="files" id="sharedFiles"></div>
   </div>
 
 </div>
@@ -196,168 +183,123 @@
 <script>
 const API = "https://dropvault-backend.onrender.com";
 
-// ✅ Get token and format it correctly
-const storedToken = localStorage.getItem("token") || localStorage.getItem("authToken");
-const token = storedToken ? (storedToken.startsWith('Token ') ? storedToken : `Token ${storedToken}`) : null;
+/* ICONS */
+const ICONS = {
+  image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
+  video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+  doc:   "https://cdn-icons-png.flaticon.com/512/337/337946.png",
+  other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
+};
 
-console.log("🔐 Auth token:", token ? "Present" : "Missing");
-
-// ✅ Check if user is authenticated
-if (!token) {
-  console.log("❌ No token found, redirecting to login...");
-  window.location.href = "/accounts/login/";
+function getFileIcon(filename = "") {
+  const ext = filename.split(".").pop().toLowerCase();
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return ICONS.image;
+  if (["mp4","mov","avi","webm","mkv"].includes(ext)) return ICONS.video;
+  if (["pdf","doc","docx","xls","xlsx","ppt","pptx","txt"].includes(ext)) return ICONS.doc;
+  return ICONS.other;
 }
 
-// ✅ Helper function for API calls
+/* TOKEN */
+const storedToken = localStorage.getItem("token") || localStorage.getItem("authToken");
+const token = storedToken ? (storedToken.startsWith("Token ") ? storedToken : `Token ${storedToken}`) : null;
+if (!token) window.location.href = "/login";
+
+/* API CALL */
 async function apiCall(endpoint) {
-  try {
-    const response = await fetch(`${API}${endpoint}`, {
-      method: "GET",
-      headers: {
-        "Authorization": token,
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      credentials: "include"
-    });
-    
-    if (response.status === 401) {
-      console.log("❌ Unauthorized - clearing token and redirecting");
-      localStorage.removeItem("token");
-      localStorage.removeItem("authToken");
-      window.location.href = "/accounts/login/";
-      return null;
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error(`❌ API Error (${endpoint}):`, error);
+  const res = await fetch(`${API}${endpoint}`, {
+    headers: {
+      "Authorization": token,
+      "Accept": "application/json"
+    },
+    credentials: "include"
+  });
+
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
     return null;
   }
+  return res.json();
 }
 
-// ✅ Load User Profile
+/* PROFILE */
 async function loadProfile() {
   const data = await apiCall("/api/user/");
-  console.log("👤 Profile data:", data);
-  
   if (data && data.success) {
-    // API returns { success: true, data: { name, email, ... } }
-    const user = data.data || data.user || data;
-    const name = user.name || user.username || user.email?.split('@')[0] || "User";
-    
+    const u = data.data || {};
+    const name = u.name || u.username || "User";
     document.getElementById("profileName").innerText = name;
     document.getElementById("avatar").innerText = name[0].toUpperCase();
     document.getElementById("welcomeTitle").innerText = `Welcome, ${name}`;
-    
-    console.log("✅ Profile loaded:", name);
-  } else {
-    console.log("⚠️ Profile load failed:", data);
   }
 }
 
-// ✅ Load Storage Info
+/* STORAGE */
 async function loadStorage() {
-  const data = await apiCall("/api/user/storage/");
-  console.log("💾 Storage data:", data);
-  
-  if (data && data.success && data.storage) {
-    const storage = data.storage;
-    
-    // Use the pre-formatted values from API
-    const usedFormatted = storage.used_formatted || "0 B";
-    const limitFormatted = storage.limit_formatted || "10 GB";
-    const percentage = storage.percentage || 0;
-    
-    document.getElementById("storageText").innerText = `${usedFormatted} / ${limitFormatted}`;
-    document.getElementById("storageBar").style.width = `${Math.min(percentage, 100)}%`;
-    
-    console.log("✅ Storage loaded:", usedFormatted, "/", limitFormatted);
-  } else {
-    console.log("⚠️ Storage load failed:", data);
-    document.getElementById("storageText").innerText = "0 B / 10 GB";
+  const d = await apiCall("/api/user/storage/");
+  if (d && d.success) {
+    document.getElementById("storageText").innerText =
+      `${d.storage.used_formatted} / ${d.storage.limit_formatted}`;
+    document.getElementById("storageBar").style.width =
+      `${Math.min(d.storage.percentage,100)}%`;
   }
 }
 
-// ✅ Load Files
+/* FILES */
 async function loadFiles() {
-  const data = await apiCall("/api/list/");
-  console.log("📁 Files data:", data);
-  
-  if (data) {
-    // Handle different response formats
-    const files = data.files || data.your_files || [];
-    
-    document.getElementById("totalFiles").innerText = files.length;
-    
-    let img = 0, doc = 0, vid = 0;
-    files.forEach(f => {
-      const filename = f.filename || f.original_name || f.name || "";
-      const ext = filename.split(".").pop().toLowerCase();
-      
-      if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) img++;
-      else if (["mp4", "mov", "avi", "webm", "mkv"].includes(ext)) vid++;
-      else doc++;
-    });
-    
-    document.getElementById("imageCount").innerText = img;
-    document.getElementById("docCount").innerText = doc;
-    document.getElementById("videoCount").innerText = vid;
-    
-    // Recent files
-    const recentFilesHtml = files.slice(0, 4).map(f => {
-      const filename = f.filename || f.original_name || f.name || "Unknown";
-      const size = f.size_bytes || f.size || 0;
-      const sizeFormatted = (size / 1024 / 1024).toFixed(2);
-      
-      return `
-        <div class="file">
-          <strong>${filename}</strong>
-          <span>${sizeFormatted} MB</span>
-        </div>
-      `;
-    }).join("");
-    
-    document.getElementById("recentFiles").innerHTML = recentFilesHtml || "<p>No files yet</p>";
-    
-    console.log("✅ Files loaded:", files.length);
-  } else {
-    console.log("⚠️ Files load failed");
-    document.getElementById("totalFiles").innerText = "0";
-  }
+  const d = await apiCall("/api/list/");
+  if (!d) return;
+
+  const files = d.files || [];
+  document.getElementById("totalFiles").innerText = files.length;
+
+  let img=0, doc=0, vid=0;
+  files.forEach(f=>{
+    const ext = f.filename.split(".").pop().toLowerCase();
+    if (["png","jpg","jpeg","gif"].includes(ext)) img++;
+    else if (["mp4","mov","avi"].includes(ext)) vid++;
+    else doc++;
+  });
+
+  imageCount.innerText = img;
+  docCount.innerText = doc;
+  videoCount.innerText = vid;
+
+  recentFiles.innerHTML = files.slice(0,4).map(f=>`
+    <div class="file">
+      <img src="${getFileIcon(f.filename)}">
+      <strong>${f.filename}</strong>
+      <span>${(f.size_bytes/1024/1024).toFixed(2)} MB</span>
+    </div>
+  `).join("");
 }
 
-// ✅ Load Shared Files
+/* SHARED */
 async function loadShared() {
-  const data = await apiCall("/api/shared/");
-  console.log("🔗 Shared data:", data);
-  
-  if (data) {
-    const list = Array.isArray(data) ? data : (data.shared || data.links || []);
-    document.getElementById("sharedCount").innerText = `${list.length} shared`;
-    console.log("✅ Shared loaded:", list.length);
-  } else {
-    document.getElementById("sharedCount").innerText = "0 shared";
-  }
+  const d = await apiCall("/api/shared/");
+  if (!d) return;
+
+  const list = Array.isArray(d) ? d : (d.shared || []);
+  sharedFiles.innerHTML = list.length
+    ? list.slice(0,4).map(f=>`
+        <div class="file">
+          <img src="${getFileIcon(f.filename)}">
+          <strong>${f.filename}</strong>
+          <span>Shared</span>
+        </div>
+      `).join("")
+    : "<p>No shared files</p>";
 }
 
-// ✅ Load all data
+/* LOAD ALL */
 async function loadDashboard() {
-  console.log("🚀 Loading dashboard...");
-  
   await loadProfile();
   await loadStorage();
   await loadFiles();
   await loadShared();
-  
-  console.log("✅ Dashboard loaded!");
 }
 
-// Run on page load
 loadDashboard();
 </script>
-
-
-
 
 {% endblock %}
