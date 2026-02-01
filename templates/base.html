@@ -4,7 +4,93 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DropVault</title>
+
   <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- Chatbot styles -->
+  <style>
+    /* Chatbot Floating Button */
+    .chatbot-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 9999;
+    }
+
+    /* Chatbot Window */
+    .chatbot-box {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      width: 320px;
+      height: 420px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+    }
+
+    .chatbot-header {
+      padding: 12px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chatbot-messages {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    .chatbot-message {
+      margin-bottom: 10px;
+    }
+
+    .bot {
+      color: #111827;
+    }
+
+    .user {
+      text-align: right;
+      color: #4f46e5;
+    }
+
+    .chatbot-input {
+      display: flex;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .chatbot-input input {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      outline: none;
+    }
+
+    .chatbot-input button {
+      border: none;
+      background: #4f46e5;
+      color: #fff;
+      padding: 0 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
@@ -28,28 +114,88 @@
     {% block content %}{% endblock %}
   </div>
 
-  <!-- Chatbot + Scripts (unchanged) -->
+  <!-- ================= CHATBOT ================= -->
+
+  <!-- Toggle Button -->
+  <button class="chatbot-toggle" id="chatbotToggle">💬</button>
+
+  <!-- Chat Window -->
+  <div class="chatbot-box" id="chatbotBox">
+    <div class="chatbot-header">
+      DropVault Assistant
+      <span style="cursor:pointer" id="closeChatbot">✖</span>
+    </div>
+
+    <div class="chatbot-messages" id="chatMessages">
+      <div class="chatbot-message bot">
+        👋 Hi! How can I help you today?
+      </div>
+    </div>
+
+    <div class="chatbot-input">
+      <input type="text" id="chatInput" placeholder="Type a message..." />
+      <button id="sendChat">Send</button>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+
   <script src="/static/js/main.js"></script>
 
   <script type="module">
-    //  Backend API base URL
     export const API_BASE = "https://dropvault-backend.onrender.com";
 
-    //Logout
+    // Logout
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
       window.location.href = "/login";
     });
   </script>
 
+  <!-- Chatbot Logic -->
+  <script>
+    const toggleBtn = document.getElementById("chatbotToggle");
+    const chatbotBox = document.getElementById("chatbotBox");
+    const closeBtn = document.getElementById("closeChatbot");
+    const sendBtn = document.getElementById("sendChat");
+    const chatInput = document.getElementById("chatInput");
+    const chatMessages = document.getElementById("chatMessages");
 
-<script>
-  const username = localStorage.getItem("username");
-  if (username) {
-    document.getElementById("profileName").innerText = username;
-  }
-</script>
+    toggleBtn.onclick = () => {
+      chatbotBox.style.display =
+        chatbotBox.style.display === "flex" ? "none" : "flex";
+    };
 
+    closeBtn.onclick = () => {
+      chatbotBox.style.display = "none";
+    };
+
+    sendBtn.onclick = sendMessage;
+    chatInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      chatInput.value = "";
+
+      // Placeholder bot response
+      setTimeout(() => {
+        addMessage("🤖 This feature will be connected soon.", "bot");
+      }, 600);
+    }
+
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.className = `chatbot-message ${type}`;
+      div.textContent = text;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  </script>
 
 </body>
 </html>
