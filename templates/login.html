@@ -3,13 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - DropVault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- ✅ Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body class="auth">
   <div class="auth-container">
     <h2>Login to DropVault</h2>
 
+    <!-- EMAIL LOGIN -->
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email" required>
       <input type="password" id="password" placeholder="Password" required>
@@ -18,98 +24,91 @@
 
     <div class="auth-divider">or</div>
 
-    <a href="https://dropvault-2.onrender.com/google-login" class="google-btn">
-      Continue with Google
-    </a>
+    <!-- GOOGLE LOGIN -->
+    <div id="g_id_onload"
+      data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
+      data-callback="handleGoogleLogin"
+      data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="continue_with"
+      data-shape="pill"
+      data-logo_alignment="left">
+    </div>
 
     <p>Don’t have an account? <a href="/register">Sign up</a></p>
   </div>
 
 <script>
-
-const _params = new URLSearchParams(window.location.search);
-if (_params.get('message')) {
-  try { alert(decodeURIComponent(_params.get('message'))); } catch { alert(_params.get('message')); }
-}
-
 const API_BASE = "https://dropvault-backend.onrender.com";
 
+/* ============================
+   EMAIL / PASSWORD LOGIN
+============================ */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+
   try {
     const res = await fetch(`${API_BASE}/api/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-      credentials: 'include' 
+      credentials: "include"
     });
 
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+    const data = await res.json();
 
-    console.log('Login response:', { status: res.status, ok: res.ok, data });
-
-    
-    if (res.ok && (data.token || data.sessionid || data.status === 'success')) {
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        console.log('Token stored in localStorage');
-      }
-      if (data.sessionid) {
-        
-        console.log('Session-based login, sessionid present in response');
-      }
-
-      alert("Login Successful");
-      
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token);
+      alert("Login successful");
       window.location.href = "/dashboard";
       return;
     }
 
-    alert(data.message || "❌ Login failed. Try again.");
+    alert(data.message || "❌ Login failed");
   } catch (err) {
-    console.error('Login request failed:', err);
-    
-    if (err && err.message && err.message.includes('Failed to fetch')) {
-      const tryProxy = confirm('Network or CORS error occurred when contacting the API.\n\nThis usually means the backend is not allowing your frontend origin (missing Access-Control-Allow-Origin header).\n\nWould you like to retry the request via a temporary CORS proxy (only for testing)?');
-      if (tryProxy) {
-        const PROXY = 'https://cors-anywhere.herokuapp.com/';
-        try {
-          const proxyRes = await fetch(PROXY + `${API_BASE}/api/login/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-            
-          });
-          const text2 = await proxyRes.text();
-          let data2;
-          try { data2 = JSON.parse(text2); } catch (_) { data2 = { raw: text2 }; }
-          if (proxyRes.ok && (data2.token || data2.sessionid || data2.status === 'success')) {
-            if (data2.token) localStorage.setItem('token', data2.token);
-            alert('Login successful (via proxy)');
-            window.location.href = '/dashboard';
-            return;
-          }
-          alert(data2.message || 'Login failed (proxy).');
-          return;
-        } catch (pe) {
-          console.error('Proxy retry failed', pe);
-          alert('Proxy retry failed. Best fix: enable CORS on backend by adding Access-Control-Allow-Origin for your frontend origin.');
-          return;
-        }
-      }
+    console.error(err);
+    alert("⚠️ Network error. Try again later.");
+  }
+});
 
-      alert('Network/CORS error. The server must allow your origin by sending Access-Control-Allow-Origin, or use a backend proxy. See console for details.');
+/* ============================
+   GOOGLE LOGIN HANDLER
+============================ */
+async function handleGoogleLogin(response) {
+  const idToken = response.credential;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/google-login/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_token: idToken }),
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token);
+      alert("Google login successful");
+      window.location.href = "/dashboard";
       return;
     }
 
-    alert('Network error. See console for details.');
+    alert(data.message || "❌ Google login failed");
+  } catch (err) {
+    console.error("Google login error:", err);
+    alert("⚠️ Google login failed. Try again.");
   }
-});
+}
 </script>
+
 </body>
 </html>
