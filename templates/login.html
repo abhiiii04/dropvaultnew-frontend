@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login – DropVault</title>
+  <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- ✅ Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body class="auth">
-
   <div class="auth-container">
     <h2>Login to DropVault</h2>
 
-    <!-- EMAIL / PASSWORD LOGIN -->
+    <!-- EMAIL LOGIN -->
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email" required>
       <input type="password" id="password" placeholder="Password" required>
@@ -25,20 +24,20 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- GOOGLE SIGN-IN BUTTON -->
+    <!-- GOOGLE LOGIN -->
     <div id="g_id_onload"
-         data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
-         data-callback="handleGoogleLogin"
-         data-auto_prompt="false">
+      data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
+      data-callback="handleGoogleLogin"
+      data-auto_prompt="false">
     </div>
 
     <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="continue_with"
-         data-shape="pill"
-         data-logo_alignment="left">
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="continue_with"
+      data-shape="pill"
+      data-logo_alignment="left">
     </div>
 
     <p>Don’t have an account? <a href="/register">Sign up</a></p>
@@ -47,21 +46,21 @@
 <script>
 const API_BASE = "https://dropvault-backend.onrender.com";
 
-/* ---------------------------------------
+/* ============================
    EMAIL / PASSWORD LOGIN
---------------------------------------- */
+============================ */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = email.value;
-  const password = password.value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
   try {
     const res = await fetch(`${API_BASE}/api/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
+      credentials: "include"
     });
 
     const data = await res.json();
@@ -70,50 +69,57 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       localStorage.setItem("token", data.token);
       alert("Login successful");
       window.location.href = "/dashboard";
-    } else {
-      alert(data.message || "Login failed");
-    }
-  } catch (err) {
-    console.error("Login error:", err);
-    alert("Network error. Try again.");
-  }
-});
-
-/* ---------------------------------------
-   GOOGLE LOGIN (ID TOKEN FLOW)
---------------------------------------- */
-async function handleGoogleLogin(response) {
-  console.log("🔐 Google credential received");
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/google/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        credential: response.credential
-      })
-    });
-
-    const data = await res.json();
-    console.log("Backend response:", res.status, data);
-
-    if (res.ok && data.success && data.token) {
-      localStorage.setItem("token", data.token);
-      alert("Google login successful");
-      window.location.href = "/dashboard";
       return;
     }
 
-    alert(data.error || "Google login failed");
+    alert(data.message || "❌ Login failed");
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Network error. Try again later.");
+  }
+});
+
+/* ============================
+   GOOGLE LOGIN HANDLER
+============================ */
+
+async function handleGoogleLogin(response) {
+  try {
+    console.log("Google credential received");
+
+    const res = await fetch(`${API_BASE}/api/auth/google/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        credential: response.credential
+      }),
+      credentials: "include"
+    });
+
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    console.log("Backend response:", res.status, data);
+
+    if (!res.ok) {
+      alert(data.message || "Google login failed");
+      return;
+    }
+
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
+
+    alert("Google login successful!");
+    window.location.href = "/dashboard";
 
   } catch (err) {
     console.error("Google login error:", err);
     alert("Google login failed. Check console.");
   }
 }
+
 </script>
 
 </body>
