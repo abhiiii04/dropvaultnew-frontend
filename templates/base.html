@@ -7,9 +7,8 @@
 
   <link rel="stylesheet" href="/static/css/style.css">
 
-  <!-- Chatbot styles -->
+  <!-- ================= CHATBOT STYLES ================= -->
   <style>
-    /* Chatbot Floating Button */
     .chatbot-toggle {
       position: fixed;
       bottom: 24px;
@@ -25,7 +24,6 @@
       z-index: 9999;
     }
 
-    /* Chatbot Window */
     .chatbot-box {
       position: fixed;
       bottom: 90px;
@@ -62,13 +60,14 @@
       margin-bottom: 10px;
     }
 
-    .bot {
+    .chatbot-message.bot {
       color: #111827;
     }
 
-    .user {
+    .chatbot-message.user {
       text-align: right;
       color: #4f46e5;
+      font-weight: 500;
     }
 
     .chatbot-input {
@@ -95,7 +94,7 @@
 
 <body>
 
-  <!-- Sidebar -->
+  <!-- ================= SIDEBAR ================= -->
   <div class="sidebar">
     <h2>DropVault</h2>
     <nav>
@@ -109,7 +108,7 @@
     </nav>
   </div>
 
-  <!-- Main Content -->
+  <!-- ================= MAIN CONTENT ================= -->
   <div class="main-content">
     {% block content %}{% endblock %}
   </div>
@@ -123,17 +122,17 @@
   <div class="chatbot-box" id="chatbotBox">
     <div class="chatbot-header">
       DropVault Assistant
-      <span style="cursor:pointer" id="closeChatbot">✖</span>
+      <span id="closeChatbot" style="cursor:pointer">✖</span>
     </div>
 
     <div class="chatbot-messages" id="chatMessages">
       <div class="chatbot-message bot">
-        👋 Hi! How can I help you today?
+        👋 Hi! I’m your DropVault assistant. Ask me about login, upload, storage, or security.
       </div>
     </div>
 
     <div class="chatbot-input">
-      <input type="text" id="chatInput" placeholder="Type a message..." />
+      <input type="text" id="chatInput" placeholder="Type a question..." />
       <button id="sendChat">Send</button>
     </div>
   </div>
@@ -145,14 +144,14 @@
   <script type="module">
     export const API_BASE = "https://dropvault-backend.onrender.com";
 
-    // Logout
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
       window.location.href = "/login";
     });
   </script>
 
-  <!-- Chatbot Logic -->
+  <!-- ================= CHATBOT LOGIC ================= -->
   <script>
     const toggleBtn = document.getElementById("chatbotToggle");
     const chatbotBox = document.getElementById("chatbotBox");
@@ -166,14 +165,30 @@
         chatbotBox.style.display === "flex" ? "none" : "flex";
     };
 
-    closeBtn.onclick = () => {
-      chatbotBox.style.display = "none";
-    };
+    closeBtn.onclick = () => chatbotBox.style.display = "none";
 
     sendBtn.onclick = sendMessage;
     chatInput.addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
+
+    /* ================= STANDARD FAQ ================= */
+
+    const FAQS = [
+      { k: ["create", "register", "sign up"], a: "📝 Click **Sign Up**, enter your email, verify it, and you’re ready." },
+      { k: ["login", "sign in"], a: "🔑 Login using email & password or **Continue with Google**." },
+      { k: ["google"], a: "✅ DropVault supports secure Google Login." },
+      { k: ["forgot", "reset password"], a: "🔐 Use **Forgot Password** on the login page." },
+      { k: ["upload"], a: "⬆️ Go to **Upload** from the sidebar to add files." },
+      { k: ["storage", "space"], a: "💾 View your storage usage on the **Dashboard**." },
+      { k: ["files"], a: "📁 All your uploaded files are available under **My Files**." },
+      { k: ["share"], a: "🔗 Share files securely from **My Files**." },
+      { k: ["trash", "delete"], a: "🗑 Deleted files go to **Trash** and can be restored." },
+      { k: ["restore"], a: "♻️ Restore deleted files from **Trash**." },
+      { k: ["secure", "security"], a: "🔒 DropVault keeps your data protected and encrypted." },
+      { k: ["2fa"], a: "🛡️ 2FA adds an extra layer of account security." },
+      { k: ["settings", "profile"], a: "⚙️ Update profile, password & preferences in **Settings**." }
+    ];
 
     function sendMessage() {
       const text = chatInput.value.trim();
@@ -182,10 +197,17 @@
       addMessage(text, "user");
       chatInput.value = "";
 
-      // Placeholder bot response
       setTimeout(() => {
-        addMessage("🤖 This feature will be connected soon.", "bot");
-      }, 600);
+        addMessage(getBotReply(text), "bot");
+      }, 500);
+    }
+
+    function getBotReply(msg) {
+      const q = msg.toLowerCase();
+      for (const f of FAQS) {
+        if (f.k.some(k => q.includes(k))) return f.a;
+      }
+      return "🤖 I can help with login, upload, storage, sharing, security, and settings.";
     }
 
     function addMessage(text, type) {
