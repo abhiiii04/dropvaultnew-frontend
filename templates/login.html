@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- ✅ CRITICAL: Fixes COOP postMessage blocking (must be FIRST meta tags) -->
-  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
-  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
 
   <link rel="stylesheet" href="/static/css/style.css">
-  <!-- ✅ FIXED: Removed ALL trailing spaces (critical for script loading) -->
+
+  <!-- ✅ Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -26,14 +24,11 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- ✅ GOOGLE LOGIN: AUTHORIZATION CODE FLOW (NON-NEGOTIABLE FIX) -->
+    <!-- GOOGLE LOGIN -->
     <div id="g_id_onload"
       data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
       data-callback="handleGoogleLogin"
-      data-auto_prompt="false"
-      data-type="code"          <!-- ⚠️ THIS WAS MISSING IN YOUR ACTUAL CODE -->
-      data-ux_mode="popup"
-      data-itp_support="true">
+      data-auto_prompt="false">
     </div>
 
     <div class="g_id_signin"
@@ -45,25 +40,20 @@
       data-logo_alignment="left">
     </div>
 
-    <p>Don't have an account? <a href="/register">Sign up</a></p>
+    <p>Don’t have an account? <a href="/register">Sign up</a></p>
   </div>
 
 <script>
-// ✅ SANITIZED: Removed trailing spaces + added safety trim
-const API_BASE = "https://dropvault-backend.onrender.com".trim();
+const API_BASE = "https://dropvault-backend.onrender.com";
 
 /* ============================
-   EMAIL LOGIN (Hardened)
+   EMAIL / PASSWORD LOGIN
 ============================ */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
 
-  if (!email || !password) {
-    alert("Please fill in all fields");
-    return;
-  }
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
   try {
     const res = await fetch(`${API_BASE}/api/login/`, {
@@ -74,73 +64,63 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
 
     const data = await res.json();
+
     if (res.ok && data.token) {
       localStorage.setItem("token", data.token);
+      alert("Login successful");
       window.location.href = "/dashboard";
       return;
     }
-    alert(data.message || "Login failed. Check credentials.");
+
+    alert(data.message || "❌ Login failed");
   } catch (err) {
-    console.error("Email login error:", err);
-    alert("Network error. Please try again later.");
+    console.error(err);
+    alert("⚠️ Network error. Try again later.");
   }
 });
 
 /* ============================
-   GOOGLE LOGIN: AUTH CODE FLOW (FIXES "Missing authorization code" ERROR)
+   GOOGLE LOGIN HANDLER
 ============================ */
-function handleGoogleLogin(response) {
-  // ✅ HANDLE GOOGLE ERRORS FIRST (popup closed, denied, etc.)
-  if (response.error) {
-    console.warn("Google auth error:", response.error);
-    const messages = {
-      'popup_closed': "Authentication popup closed. Please try again.",
-      'access_denied': "Google access denied. Please authorize DropVault.",
-      'invalid_request': "Invalid Google auth request. Contact support."
-    };
-    alert(messages[response.error] || "Google login failed. Please try again.");
-    return;
-  }
 
-  // ✅ CRITICAL: ONLY accept 'code' (authorization code flow)
-  // Your console log proved this was missing: response contained 'credential', not 'code'
-  if (!response.code) {
-    console.error("❌ FATAL: Google returned ID token instead of auth code!", response);
-    console.error("✅ FIX: Ensure data-type='code' is set on #g_id_onload div");
-    alert("Google configuration error. Please contact support.");
-    return;
-  }
+async function handleGoogleLogin(response) {
+  try {
+    console.log("Google credential received");
 
-  // ✅ SEND AUTHORIZATION CODE TO BACKEND (NOT credential!)
-  fetch(`${API_BASE}/api/auth/google/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: response.code }), // Backend expects 'code'
-    credentials: "include"
-  })
-  .then(async res => {
-    // Robust response parsing
-    const raw = await res.text();
+    const res = await fetch(`${API_BASE}/api/auth/google/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        credential: response.credential
+      }),
+      credentials: "include"
+    });
+
+    const text = await res.text();
     let data;
-    try {
-      data = res.headers.get('content-type')?.includes('json') 
-        ? JSON.parse(raw) 
-        : { error: raw };
-    } catch {
-      data = { error: "Invalid server response" };
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    console.log("Backend response:", res.status, data);
+
+    if (!res.ok) {
+      alert(data.message || "Google login failed");
+      return;
     }
 
-    if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
-    if (!data.token) throw new Error("No token received from server");
-    
-    localStorage.setItem("token", data.token);
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
+
+    alert("Google login successful!");
     window.location.href = "/dashboard";
-  })
-  .catch(err => {
-    console.error("Google login failed:", err);
-    alert(`Login failed: ${err.message}`);
-  });
+
+  } catch (err) {
+    console.error("Google login error:", err);
+    alert("Google login failed. Check console.");
+  }
 }
+
 </script>
+
 </body>
 </html>
