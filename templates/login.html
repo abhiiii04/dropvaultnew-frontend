@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <link rel="stylesheet" href="/static/css/style.css">
-
+  
   <!-- ✅ Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -24,34 +23,84 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- GOOGLE LOGIN -->
-    <div id="g_id_onload"
-      data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
-      data-callback="handleGoogleLogin"
-      data-auto_prompt="false">
-    </div>
-
-    <div class="g_id_signin"
-      data-type="standard"
-      data-size="large"
-      data-theme="outline"
-      data-text="continue_with"
-      data-shape="pill"
-      data-logo_alignment="left">
-    </div>
+    <!-- GOOGLE LOGIN BUTTON (Custom Trigger) -->
+    <!-- We use a custom button because 'g_id_signin' is for ID Tokens only -->
+    <button id="googleBtn" type="button" class="google-btn">
+      Continue with Google
+    </button>
 
     <p>Don’t have an account? <a href="/register">Sign up</a></p>
   </div>
 
 <script>
 const API_BASE = "https://dropvault-backend.onrender.com";
+let client;
 
 /* ============================
-   EMAIL / PASSWORD LOGIN
+   1. INITIALIZE GOOGLE CODE CLIENT
+============================ */
+window.onload = function() {
+  client = google.accounts.oauth2.initCodeClient({
+    client_id: "100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com",
+    scope: "email profile openid", // Add 'https://www.googleapis.com/auth/drive.file' if you need DropVault file access
+    ux_mode: "popup",
+    callback: (response) => {
+      if (response.code) {
+        handleGoogleLogin(response.code);
+      }
+    },
+  });
+};
+
+/* ============================
+   2. TRIGGER LOGIN ON CLICK
+============================ */
+document.getElementById("googleBtn").addEventListener("click", () => {
+  client.requestCode();
+});
+
+/* ============================
+   3. SEND CODE TO BACKEND
+============================ */
+async function handleGoogleLogin(authCode) {
+  try {
+    console.log("Google Auth Code received:", authCode);
+
+    const res = await fetch(`${API_BASE}/api/auth/google/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Backend expects 'code', not 'credential'
+      body: JSON.stringify({
+        code: authCode 
+      }),
+      credentials: "include"
+    });
+
+    const data = await res.json();
+    console.log("Backend response:", res.status, data);
+
+    if (!res.ok) {
+      alert(data.message || data.error || "Google login failed");
+      return;
+    }
+
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      alert("Google login successful!");
+      window.location.href = "/dashboard";
+    }
+
+  } catch (err) {
+    console.error("Google login error:", err);
+    alert("Google login failed. Check console.");
+  }
+}
+
+/* ============================
+   EMAIL LOGIN HANDLER
 ============================ */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
@@ -62,65 +111,34 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       body: JSON.stringify({ email, password }),
       credentials: "include"
     });
-
     const data = await res.json();
-
     if (res.ok && data.token) {
       localStorage.setItem("token", data.token);
-      alert("Login successful");
       window.location.href = "/dashboard";
-      return;
+    } else {
+      alert(data.message || "Login failed");
     }
-
-    alert(data.message || "❌ Login failed");
-  } catch (err) {
-    console.error(err);
-    alert("⚠️ Network error. Try again later.");
-  }
+  } catch (err) { console.error(err); alert("Network error"); }
 });
-
-/* ============================
-   GOOGLE LOGIN HANDLER
-============================ */
-
-async function handleGoogleLogin(response) {
-  try {
-    console.log("Google credential received");
-
-    const res = await fetch(`${API_BASE}/api/auth/google/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        credential: response.credential
-      }),
-      credentials: "include"
-    });
-
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-    console.log("Backend response:", res.status, data);
-
-    if (!res.ok) {
-      alert(data.message || "Google login failed");
-      return;
-    }
-
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-    }
-
-    alert("Google login successful!");
-    window.location.href = "/dashboard";
-
-  } catch (err) {
-    console.error("Google login error:", err);
-    alert("Google login failed. Check console.");
-  }
-}
-
 </script>
+
+<!-- Optional CSS to make the custom button look like Google -->
+<style>
+  .google-btn {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 100%;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .google-btn:hover {
+    background-color: #f1f1f1;
+  }
+</style>
 
 </body>
 </html>
