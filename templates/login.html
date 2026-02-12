@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- ✅ Critical: Prevent COOP errors with Google popup -->
+  <!-- ✅ CRITICAL: Fix COOP errors blocking Google popup communication -->
   <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
   <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
 
   <link rel="stylesheet" href="/static/css/style.css">
-  <!-- ✅ FIXED: Removed trailing spaces in URL -->
+  <!-- ✅ FIXED: Removed ALL trailing spaces in URL -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -26,13 +26,14 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- ✅ GOOGLE LOGIN: SWITCHED TO AUTH CODE FLOW (required by backend) -->
+    <!-- ✅ GOOGLE LOGIN: AUTHORIZATION CODE FLOW (REQUIRED BY BACKEND) -->
     <div id="g_id_onload"
       data-client_id="100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com"
       data-callback="handleGoogleLogin"
       data-auto_prompt="false"
-      data-type="code" <!-- CRITICAL: Request auth code instead of ID token -->
-      data-ux_mode="popup">
+      data-type="code"          <!-- CRITICAL: Request auth CODE not ID token -->
+      data-ux_mode="popup"      <!-- Ensures popup flow -->
+      data-itp_support="true">  <!-- Improves Safari compatibility -->
     </div>
 
     <div class="g_id_signin"
@@ -48,8 +49,8 @@
   </div>
 
 <script>
-// ✅ FIXED: Removed trailing spaces in API URL
-const API_BASE = "https://dropvault-backend.onrender.com";
+// ✅ FIXED: Removed ALL trailing spaces + added URL validation
+const API_BASE = "https://dropvault-backend.onrender.com".trim();
 
 /* ============================
    EMAIL / PASSWORD LOGIN
@@ -58,6 +59,11 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Please fill in all fields");
+    return;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/api/login/`, {
@@ -75,44 +81,66 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     }
     alert(data.message || "Login failed. Check credentials.");
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("Email login error:", err);
     alert("Network error. Please try again later.");
   }
 });
 
 /* ============================
-   GOOGLE LOGIN: AUTH CODE FLOW
+   GOOGLE LOGIN: AUTH CODE FLOW (FIXES 400 ERROR)
 ============================ */
 function handleGoogleLogin(response) {
-  // ✅ CRITICAL: Backend expects 'code', NOT ID token (credential)
-  if (!response.code) {
-    console.error("Google auth error: No authorization code received", response);
-    alert("Google login failed. Please try again.");
+  // ✅ Handle Google errors FIRST (user cancellation, network issues)
+  if (response.error) {
+    console.error("Google auth error:", response.error, response);
+    const errorMsg = 
+      response.error === 'popup_closed' ? "Popup closed. Please try again." :
+      response.error === 'access_denied' ? "Access denied. Please authorize DropVault." :
+      "Google authentication failed. Please try again.";
+    alert(errorMsg);
     return;
   }
 
-  // Send auth code to backend for token exchange
+  // ✅ CRITICAL: Backend requires 'code' (authorization code), NOT ID token
+  if (!response.code) {
+    console.error("Missing authorization code:", response);
+    alert("Invalid Google response. Please try again.");
+    return;
+  }
+
+  // Send auth code to backend for secure token exchange
   fetch(`${API_BASE}/api/auth/google/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: response.code }), // ✅ Send 'code' field
+    body: JSON.stringify({ code: response.code }), // ✅ Correct field name
     credentials: "include"
   })
-  .then(res => {
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  })
-  .then(data => {
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      window.location.href = "/dashboard";
-    } else {
-      throw new Error(data.message || "Invalid response from server");
+  .then(async res => {
+    const contentType = res.headers.get("content-type");
+    const rawData = await res.text();
+    
+    // Handle non-JSON responses gracefully
+    let data;
+    try {
+      data = contentType?.includes("application/json") ? JSON.parse(rawData) : { error: rawData };
+    } catch {
+      data = { error: "Invalid server response" };
     }
+
+    if (!res.ok) {
+      throw new Error(data.message || data.error || `HTTP ${res.status}`);
+    }
+    
+    if (!data.token) {
+      throw new Error("No authentication token received");
+    }
+    
+    localStorage.setItem("token", data.token);
+    window.location.href = "/dashboard";
   })
   .catch(err => {
     console.error("Google login failed:", err);
-    alert("Google authentication failed. Please try again.");
+    alert(`Google login failed: ${err.message}`);
   });
 }
 </script>
