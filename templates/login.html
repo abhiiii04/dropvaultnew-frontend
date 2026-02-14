@@ -5,9 +5,7 @@
   <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/css/style.css">
-  
-  <!-- FIXED: Removed trailing space in src -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- REMOVED: Google Identity Services script (not needed for redirect flow) -->
 </head>
 
 <body class="auth">
@@ -32,119 +30,115 @@
   </div>
 
 <script>
-// FIXED: Removed trailing spaces
+// FIXED: Clean API base URL (NO trailing spaces)
 const API_BASE = "https://dropvault-backend.onrender.com";
 
-let client;
+// 🔑 GOOGLE OAUTH CALLBACK HANDLER (Runs ONLY on /google-callback route)
+if (window.location.pathname === '/google-callback') {
+  const urlParams = new URLSearchParams(window.location.search);
+  const authCode = urlParams.get('code');
+  const error = urlParams.get('error');
+  
+  // Clean URL immediately to remove auth code from history/address bar
+  window.history.replaceState({}, document.title, '/');
 
-/* 1. INITIALIZE GOOGLE CLIENT WITH CRITICAL FIXES */
-window.addEventListener('load', () => {
-  // Wait for Google script to load
-  if (!window.google) {
-    console.error("Google Identity Services script failed to load");
-    return;
+  if (error) {
+    console.error('Google OAuth error:', error);
+    alert(`Google login failed: ${error}`);
+    window.location.href = '/login';
+    throw new Error('Google OAuth error');
   }
 
-  client = google.accounts.oauth2.initCodeClient({
-    client_id: "100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com",
-    scope: "email profile openid",
-    ux_mode: "popup",
-    // 🔑 CRITICAL FIX: Required for popup flow
-    redirect_uri: "postmessage", 
-    callback: (response) => {
-      // Handle Google errors FIRST
-      if (response.error) {
-        console.error("Google OAuth error:", response.error);
-        alert(`Google login failed: ${response.error}`);
-        return;
-      }
-      
-      if (response.code) {
-        handleGoogleLogin(response.code);
-      }
+  if (!authCode) {
+    console.error('Missing authorization code in callback');
+    alert('Invalid Google callback response');
+    window.location.href = '/login';
+    throw new Error('Missing auth code');
+  }
+
+  // Exchange code with backend EXACTLY as expected
+  fetch(`${API_BASE}/api/auth/google/`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
-  });
-});
-
-/* 2. TRIGGER LOGIN */
-document.getElementById("googleBtn").addEventListener("click", () => {
-  if (client) {
-    client.requestCode();
-  } else {
-    alert("Google login not ready. Please refresh the page.");
-  }
-});
-
-/* 3. SEND CODE TO BACKEND */
-async function handleGoogleLogin(authCode) {
-  try {
-    console.log("✅ Sending auth code to backend...");
-    
-    const res = await fetch(`${API_BASE}/api/auth/google/`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ code: authCode }), // Backend MUST expect "code"
-      credentials: "include"
-    });
-
-    const data = await res.json();
-    console.log("📡 Backend response:", res.status, data);
-
-    if (!res.ok) {
-      // Show specific backend error if available
-      const errorMsg = data.message || data.error || `Login failed (${res.status})`;
-      console.error("Backend error:", errorMsg);
-      alert(`Google login failed: ${errorMsg}`);
-      return;
+    body: JSON.stringify({ code: authCode }), // Backend expects "code" key
+    credentials: 'include'
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.json().then(data => {
+        throw new Error(data.message || data.error || `Login failed (${response.status})`);
+      });
     }
-
+    return response.json();
+  })
+  .then(data => {
     if (data.token) {
-      localStorage.setItem("token", data.token);
-      // Also store as authToken for compatibility with dashboard
-      localStorage.setItem("authToken", data.token);
-      console.log("✅ Login successful! Redirecting to dashboard...");
-      window.location.href = "/dashboard";
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('authToken', data.token); // Dashboard compatibility
+      console.log('✅ Google login successful! Redirecting to dashboard...');
+      window.location.href = '/dashboard';
     } else {
-      throw new Error("No token received from backend");
+      throw new Error('No token received from backend');
     }
-
-  } catch (err) {
-    console.error("💥 Critical login error:", err);
-    alert(`Login failed: ${err.message || "Unknown error"}`);
-  }
+  })
+  .catch(err => {
+    console.error('💥 Google callback error:', err);
+    alert(`Google login failed: ${err.message}`);
+    window.location.href = '/login';
+  });
 }
+// 🔑 STANDARD LOGIN PAGE SETUP (Runs on /login route)
+else {
+  /* EMAIL LOGIN HANDLER (UNCHANGED) */
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-/* EMAIL LOGIN HANDLER */
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/login/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      credentials: "include"
-    });
-    
-    const data = await res.json();
-    
-    if (res.ok && data.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("authToken", data.token); // For dashboard compatibility
-      window.location.href = "/dashboard";
-    } else {
-      alert(data.message || "Invalid email or password");
+    try {
+      const res = await fetch(`${API_BASE}/api/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include"
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("authToken", data.token);
+        window.location.href = "/dashboard";
+      } else {
+        alert(data.message || "Invalid email or password");
+      }
+    } catch (err) { 
+      console.error("Email login error:", err);
+      alert("Network error. Please check your connection.");
     }
-  } catch (err) { 
-    console.error("Email login error:", err);
-    alert("Network error. Please check your connection.");
-  }
-});
+  });
+
+  /* GOOGLE LOGIN BUTTON - REDIRECT FLOW (MATCHES BACKEND) */
+  document.getElementById("googleBtn").addEventListener("click", () => {
+    // Generate EXACT redirect_uri backend will use for token exchange
+    const redirectUri = window.location.origin + '/google-callback';
+    
+    // Construct Google OAuth URL (redirect flow)
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=email%20profile%20openid&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    // Redirect to Google (backend expects this flow)
+    window.location.href = googleAuthUrl;
+  });
+}
 </script>
 </body>
 </html>
