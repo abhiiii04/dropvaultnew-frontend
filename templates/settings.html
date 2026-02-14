@@ -35,11 +35,11 @@
         <strong id="totalStorage">0 B</strong>
       </p>
 
-      <!-- ✅ UPDATED BUTTON (MATCHES SAVE / UPDATE STYLE) -->
+      <!-- ✅ FIXED BUTTON -->
       <button
         type="button"
         class="btn-save"
-        onclick="location.href='/files'">
+        onclick="window.location.href='/myfiles'">
         Manage Files
       </button>
     </section>
@@ -81,7 +81,7 @@
 <script>
 const API = "https://dropvault-backend.onrender.com";
 
-/* ✅ SAME TOKEN LOGIC AS DASHBOARD */
+/* TOKEN */
 const storedToken =
   localStorage.getItem("token") ||
   localStorage.getItem("authToken");
@@ -90,11 +90,9 @@ const token = storedToken
   ? (storedToken.startsWith("Token ") ? storedToken : `Token ${storedToken}`)
   : null;
 
-if (!token) {
-  window.location.href = "/login";
-}
+if (!token) window.location.href = "/login";
 
-/* ✅ SHARED API CALL */
+/* API CALL */
 async function apiCall(endpoint, options = {}) {
   const res = await fetch(`${API}${endpoint}`, {
     ...options,
@@ -115,47 +113,31 @@ async function apiCall(endpoint, options = {}) {
   return res.json();
 }
 
-/* ================= PROFILE ================= */
+/* LOAD PROFILE */
 async function loadProfile() {
   const data = await apiCall("/api/user/");
-
   if (data && data.success) {
-    const user = data.data || data.user || {};
-    document.getElementById("username").value =
-      user.username || user.name || "";
-    document.getElementById("email").value =
-      user.email || "";
+    const u = data.data || {};
+    document.getElementById("username").value = u.username || "";
+    document.getElementById("email").value = u.email || "";
   }
 }
 
-/* ================= STORAGE (MATCH DASHBOARD) ================= */
+/* LOAD STORAGE */
 async function loadStorage() {
   const data = await apiCall("/api/user/storage/");
-
   if (data && data.success && data.storage) {
     const s = data.storage;
-
-    document.getElementById("usedStorage").innerText =
-      s.used_formatted || "0 B";
-
-    document.getElementById("totalStorage").innerText =
-      s.limit_formatted || "10 GB";
-
+    document.getElementById("usedStorage").innerText = s.used_formatted || "0 B";
+    document.getElementById("totalStorage").innerText = s.limit_formatted || "10 GB";
     document.getElementById("storageBar").style.width =
       `${Math.min(s.percentage || 0, 100)}%`;
   }
 }
 
-/* ================= UPDATE PROFILE ================= */
-document.getElementById("profileForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  alert("Profile update endpoint not enabled yet.");
-});
-
-/* ================= PASSWORD ================= */
+/* PASSWORD */
 document.getElementById("passwordForm").addEventListener("submit", async e => {
   e.preventDefault();
-
   const password = document.getElementById("newPassword").value;
   if (!password) return alert("Enter a password");
 
@@ -170,19 +152,11 @@ document.getElementById("passwordForm").addEventListener("submit", async e => {
   }
 });
 
-/* ================= PREFERENCES ================= */
-document.getElementById("prefsForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  alert("Preferences API not implemented yet.");
-});
-
-/* ================= LOAD ALL ================= */
-async function loadSettings() {
+/* LOAD ALL */
+(async function () {
   await loadProfile();
   await loadStorage();
-}
-
-loadSettings();
+})();
 </script>
 
 {% endblock %}
