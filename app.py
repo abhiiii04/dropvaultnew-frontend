@@ -30,7 +30,7 @@ def handle_uncaught_exceptions(e):
     err_id = uuid.uuid4().hex
     tb = traceback.format_exc()
     logging.error('Error id %s: %s', err_id, tb)
-    # Return a short message including the error id so you can find the traceback in logs
+    
     return (f"Internal Server Error\nError id: {err_id}"), 500
 
 
