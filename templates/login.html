@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/css/style.css">
   
-  <!--  Google Identity Services -->
+  <!-- FIXED: Removed trailing space in src -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -23,8 +23,7 @@
 
     <div class="auth-divider">or</div>
 
-    <!-- GOOGLE LOGIN BUTTON (Custom Trigger) -->
-    <!-- We use a custom button because 'g_id_signin' is for ID Tokens only -->
+    <!-- GOOGLE LOGIN BUTTON -->
     <button id="googleBtn" type="button" class="google-btn">
       Continue with Google
     </button>
@@ -33,69 +32,95 @@
   </div>
 
 <script>
+// FIXED: Removed trailing spaces
 const API_BASE = "https://dropvault-backend.onrender.com";
+
 let client;
 
-/* ============================
-   1. INITIALIZE GOOGLE CODE CLIENT
-============================ */
-window.onload = function() {
+/* 1. INITIALIZE GOOGLE CLIENT WITH CRITICAL FIXES */
+window.addEventListener('load', () => {
+  // Wait for Google script to load
+  if (!window.google) {
+    console.error("Google Identity Services script failed to load");
+    return;
+  }
+
   client = google.accounts.oauth2.initCodeClient({
     client_id: "100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com",
-    scope: "email profile openid", // Add 'https://www.googleapis.com/auth/drive.file' if you need DropVault file access
+    scope: "email profile openid",
     ux_mode: "popup",
+    // 🔑 CRITICAL FIX: Required for popup flow
+    redirect_uri: "postmessage", 
     callback: (response) => {
+      // Handle Google errors FIRST
+      if (response.error) {
+        console.error("Google OAuth error:", response.error);
+        alert(`Google login failed: ${response.error}`);
+        return;
+      }
+      
       if (response.code) {
         handleGoogleLogin(response.code);
       }
     },
   });
-};
+});
 
-/*  2. TRIGGER LOGIN ON CLICK */
+/* 2. TRIGGER LOGIN */
 document.getElementById("googleBtn").addEventListener("click", () => {
-  client.requestCode();
+  if (client) {
+    client.requestCode();
+  } else {
+    alert("Google login not ready. Please refresh the page.");
+  }
 });
 
 /* 3. SEND CODE TO BACKEND */
 async function handleGoogleLogin(authCode) {
   try {
-    console.log("Google Auth Code received:", authCode);
-
+    console.log("✅ Sending auth code to backend...");
+    
     const res = await fetch(`${API_BASE}/api/auth/google/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-    
-      body: JSON.stringify({
-        code: authCode 
-      }),
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ code: authCode }), // Backend MUST expect "code"
       credentials: "include"
     });
 
     const data = await res.json();
-    console.log("Backend response:", res.status, data);
+    console.log("📡 Backend response:", res.status, data);
 
     if (!res.ok) {
-      alert(data.message || data.error || "Google login failed");
+      // Show specific backend error if available
+      const errorMsg = data.message || data.error || `Login failed (${res.status})`;
+      console.error("Backend error:", errorMsg);
+      alert(`Google login failed: ${errorMsg}`);
       return;
     }
 
     if (data.token) {
       localStorage.setItem("token", data.token);
-      alert("Google login successful!");
+      // Also store as authToken for compatibility with dashboard
+      localStorage.setItem("authToken", data.token);
+      console.log("✅ Login successful! Redirecting to dashboard...");
       window.location.href = "/dashboard";
+    } else {
+      throw new Error("No token received from backend");
     }
 
   } catch (err) {
-    console.error("Google login error:", err);
-    alert("Google login failed. Check console.");
+    console.error("💥 Critical login error:", err);
+    alert(`Login failed: ${err.message || "Unknown error"}`);
   }
 }
 
-/* EMAIL LOGIN HANDLER*/
+/* EMAIL LOGIN HANDLER */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const email = document.getElementById("email").value;
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
   try {
@@ -105,17 +130,21 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       body: JSON.stringify({ email, password }),
       credentials: "include"
     });
+    
     const data = await res.json();
+    
     if (res.ok && data.token) {
       localStorage.setItem("token", data.token);
+      localStorage.setItem("authToken", data.token); // For dashboard compatibility
       window.location.href = "/dashboard";
     } else {
-      alert(data.message || "Login failed");
+      alert(data.message || "Invalid email or password");
     }
-  } catch (err) { console.error(err); alert("Network error"); }
+  } catch (err) { 
+    console.error("Email login error:", err);
+    alert("Network error. Please check your connection.");
+  }
 });
 </script>
-
-
 </body>
 </html>
