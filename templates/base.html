@@ -7,6 +7,43 @@
 
   <link rel="stylesheet" href="/static/css/style.css">
 
+  <style>
+  body.dark {
+    background: #0f172a;
+    color: #e5e7eb;
+  }
+
+  body.dark .sidebar {
+    background: #020617;
+  }
+
+  body.dark .main-content {
+    background: #0f172a;
+  }
+
+  body.dark .settings-card,
+  body.dark .stat-card,
+  body.dark .storage,
+  body.dark .shared,
+  body.dark .file {
+    background: #020617;
+    color: #e5e7eb;
+  }
+
+  body.dark input,
+  body.dark select {
+    background: #020617;
+    color: #e5e7eb;
+    border: 1px solid #334155;
+  }
+
+  body.dark .btn-save {
+    background: #4f46e5;
+    color: #fff;
+  }
+</style>
+
+
   <!-- ================= CHATBOT STYLES ================= -->
   <style>
     .chatbot-toggle {
@@ -218,6 +255,13 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
   </script>
+  
+  <script>
+  const savedTheme = localStorage.getItem("theme") || "light";
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+  }
+</script>
 
 </body>
 </html>

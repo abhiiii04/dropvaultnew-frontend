@@ -159,4 +159,30 @@ document.getElementById("passwordForm").addEventListener("submit", async e => {
 })();
 </script>
 
+<script>
+document.getElementById("prefsForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  const theme = document.getElementById("themeSelect").value;
+
+  // Save theme
+  localStorage.setItem("theme", theme);
+
+  // Apply theme instantly
+  if (theme === "dark") {
+    document.body.classList.add("dark");
+  } else {
+    document.body.classList.remove("dark");
+  }
+
+  alert("Preferences saved ✅");
+});
+
+/* Load saved theme in dropdown */
+(function loadThemePreference() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.getElementById("themeSelect").value = savedTheme;
+})();
+</script>
+
 {% endblock %}
