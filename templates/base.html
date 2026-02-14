@@ -7,41 +7,64 @@
 
   <link rel="stylesheet" href="/static/css/style.css">
 
-  <style>
-  body.dark {
-    background: #0f172a;
-    color: #e5e7eb;
-  }
+  <!-- SIDEBAR -->
+<div class="sidebar">
+  <!-- LOGO -->
+  <div class="sidebar-header">
+    <div class="logo-box">
+      🔒
+    </div>
+    <span class="logo-text">DropVault</span>
+  </div>
 
-  body.dark .sidebar {
-    background: #020617;
-  }
+  <!-- MAIN -->
+  <div class="sidebar-section">MAIN</div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="nav-item">
+      🏠 <span>Home</span>
+    </a>
+    <a href="/upload" class="nav-item">
+      ⬆️ <span>Upload</span>
+    </a>
+  </nav>
 
-  body.dark .main-content {
-    background: #0f172a;
-  }
+  <!-- FILES -->
+  <div class="sidebar-section">FILES</div>
+  <nav class="sidebar-nav">
+    <a href="/myfiles" class="nav-item active">
+      📁 <span>My Files</span>
+    </a>
+    <a href="/shared" class="nav-item">
+      🔗 <span>Shared</span>
+    </a>
+    <a href="/trash" class="nav-item">
+      🗑️ <span>Trash</span>
+    </a>
+  </nav>
 
-  body.dark .settings-card,
-  body.dark .stat-card,
-  body.dark .storage,
-  body.dark .shared,
-  body.dark .file {
-    background: #020617;
-    color: #e5e7eb;
-  }
+  <!-- ACCOUNT -->
+  <div class="sidebar-section">ACCOUNT</div>
+  <nav class="sidebar-nav">
+    <a href="/settings" class="nav-item">
+      ⚙️ <span>Settings</span>
+    </a>
+  </nav>
 
-  body.dark input,
-  body.dark select {
-    background: #020617;
-    color: #e5e7eb;
-    border: 1px solid #334155;
-  }
+  <!-- USER INFO -->
+  <div class="sidebar-user">
+    <div class="user-avatar">A</div>
+    <div class="user-info">
+      <div class="user-name">abhitripathi20296</div>
+      <div class="user-email">abhitripathi20296@gmail.com</div>
+    </div>
+  </div>
 
-  body.dark .btn-save {
-    background: #4f46e5;
-    color: #fff;
-  }
-</style>
+  <!-- LOGOUT -->
+  <button class="logout-btn" id="logoutBtn">
+    ⎋ Sign Out
+  </button>
+</div>
+
 
 
   <!-- CHATBOT STYLES  -->
