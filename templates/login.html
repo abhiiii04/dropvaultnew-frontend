@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/css/style.css">
   
-  <!-- ✅ Google Identity Services -->
+  <!--  Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -52,16 +52,12 @@ window.onload = function() {
   });
 };
 
-/* ============================
-   2. TRIGGER LOGIN ON CLICK
-============================ */
+/*  2. TRIGGER LOGIN ON CLICK */
 document.getElementById("googleBtn").addEventListener("click", () => {
   client.requestCode();
 });
 
-/* ============================
-   3. SEND CODE TO BACKEND
-============================ */
+/* 3. SEND CODE TO BACKEND */
 async function handleGoogleLogin(authCode) {
   try {
     console.log("Google Auth Code received:", authCode);
@@ -69,7 +65,7 @@ async function handleGoogleLogin(authCode) {
     const res = await fetch(`${API_BASE}/api/auth/google/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Backend expects 'code', not 'credential'
+    
       body: JSON.stringify({
         code: authCode 
       }),
@@ -96,9 +92,7 @@ async function handleGoogleLogin(authCode) {
   }
 }
 
-/* ============================
-   EMAIL LOGIN HANDLER
-============================ */
+/* EMAIL LOGIN HANDLER*/
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value;
@@ -122,23 +116,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 });
 </script>
 
-<!-- Optional CSS to make the custom button look like Google -->
-<style>
-  .google-btn {
-    background-color: #fff;
-    color: #333;
-    border: 1px solid #ccc;
-    padding: 10px;
-    width: 100%;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-  .google-btn:hover {
-    background-color: #f1f1f1;
-  }
-</style>
 
 </body>
 </html>

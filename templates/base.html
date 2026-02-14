@@ -44,7 +44,7 @@
 </style>
 
 
-  <!-- ================= CHATBOT STYLES ================= -->
+  <!-- CHATBOT STYLES  -->
   <style>
     .chatbot-toggle {
       position: fixed;
@@ -131,7 +131,7 @@
 
 <body>
 
-  <!-- ================= SIDEBAR ================= -->
+  <!--  SIDEBAR -->
   <div class="sidebar">
     <h2>DropVault</h2>
     <nav>
@@ -145,12 +145,12 @@
     </nav>
   </div>
 
-  <!-- ================= MAIN CONTENT ================= -->
+  <!-- MAIN CONTENT -->
   <div class="main-content">
     {% block content %}{% endblock %}
   </div>
 
-  <!-- ================= CHATBOT ================= -->
+  <!-- CHATBOT -->
 
   <!-- Toggle Button -->
   <button class="chatbot-toggle" id="chatbotToggle">💬</button>
@@ -164,7 +164,7 @@
 
     <div class="chatbot-messages" id="chatMessages">
       <div class="chatbot-message bot">
-        👋 Hi! I’m your DropVault assistant. Ask me about login, upload, storage, or security.
+         Hi! I’m your DropVault assistant. Ask me about login, upload, storage, or security.
       </div>
     </div>
 
@@ -174,7 +174,7 @@
     </div>
   </div>
 
-  <!-- ================= SCRIPTS ================= -->
+  <!-- SCRIPTS  -->
 
   <script src="/static/js/main.js"></script>
 
@@ -188,7 +188,7 @@
     });
   </script>
 
-  <!-- ================= CHATBOT LOGIC ================= -->
+  <!--  CHATBOT LOGIC -->
   <script>
     const toggleBtn = document.getElementById("chatbotToggle");
     const chatbotBox = document.getElementById("chatbotBox");
@@ -209,7 +209,7 @@
       if (e.key === "Enter") sendMessage();
     });
 
-    /* ================= STANDARD FAQ ================= */
+    /*  STANDARD FAQ  */
 
     const FAQS = [
       { k: ["create", "register", "sign up"], a: "📝 Click **Sign Up**, enter your email, verify it, and you’re ready." },

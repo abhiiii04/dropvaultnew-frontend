@@ -19,7 +19,7 @@
       <button type="submit">Sign Up</button>
     </form>
 
-    <!-- EMAIL VERIFICATION FORM -->
+    <!--EMAIL VERIFICATION FORM -->
     <form id="verifyForm" style="display:none;">
       <p>📩 Enter the verification code sent to your email</p>
       <input type="text" id="verificationCode" placeholder="Verification Code" required>
@@ -33,7 +33,7 @@
 const API_BASE = "https://dropvault-backend.onrender.com";
 let registeredEmail = "";
 
-/* ================= REGISTER ================= */
+/* REGISTER  */
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -74,7 +74,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   }
 });
 
-/* ================= VERIFY EMAIL ================= */
+/* VERIFY EMAIL */
 document.getElementById("verifyForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 

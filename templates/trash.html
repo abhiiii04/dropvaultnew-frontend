@@ -26,7 +26,7 @@ async function loadTrash() {
   try {
     const res = await fetch(`${API_BASE}/api/trash/`, {
       method: "GET",
-      credentials: "include" // ✅ THIS IS THE FIX
+      credentials: "include" 
     });
 
     console.log("📥 Trash response status:", res.status);

@@ -235,19 +235,19 @@
 <script>
 const API = "https://dropvault-backend.onrender.com";
 
-// ✅ Get token and format it correctly
+//  Get token and format it correctly
 const storedToken = localStorage.getItem("token") || localStorage.getItem("authToken");
 const token = storedToken ? (storedToken.startsWith('Token ') ? storedToken : `Token ${storedToken}`) : null;
 
 console.log("🔐 Auth token:", token ? "Present" : "Missing");
 
-// ✅ Check if user is authenticated
+//  Check if user is authenticated
 if (!token) {
   console.log("❌ No token found, redirecting to login...");
   window.location.href = "/accounts/login/";
 }
 
-// ✅ Helper function for API calls
+// Helper function for API calls
 async function apiCall(endpoint) {
   try {
     const response = await fetch(`${API}${endpoint}`, {
@@ -275,7 +275,7 @@ async function apiCall(endpoint) {
   }
 }
 
-// ✅ Load User Profile
+//  Load User Profile
 async function loadProfile() {
   const data = await apiCall("/api/user/");
   console.log("👤 Profile data:", data);
@@ -294,7 +294,7 @@ async function loadProfile() {
   }
 }
 
-// ✅ Load Storage Info
+//  Load Storage Info
 async function loadStorage() {
   const data = await apiCall("/api/user/storage/");
   console.log("💾 Storage data:", data);
@@ -315,7 +315,7 @@ async function loadStorage() {
   }
 }
 
-// ✅ Load Files
+//  Load Files
 async function loadFiles() {
   const data = await apiCall("/api/list/");
   console.log("📁 Files data:", data);
@@ -324,10 +324,10 @@ async function loadFiles() {
     const files = data.files || data.your_files || [];
     document.getElementById("totalFiles").innerText = files.length;
     
-    // File type counters
+    
     let img = 0, doc = 0, vid = 0;
     
-    // File type detection helper
+    
     function getFileType(filename) {
       const ext = (filename.split('.').pop() || '').toLowerCase().trim();
       
@@ -359,7 +359,7 @@ async function loadFiles() {
       if (type === "image") img++;
       else if (type === "video") vid++;
       else if (type === "doc") doc++;
-      // "other" not counted in stats per original implementation
+      
     });
     
     document.getElementById("imageCount").innerText = img;
@@ -417,7 +417,7 @@ async function loadFiles() {
   }
 }
 
-// ✅ Load Shared Files
+//  Load Shared Files
 async function loadShared() {
   const data = await apiCall("/api/shared/");
   console.log("🔗 Shared data:", data);
@@ -431,7 +431,7 @@ async function loadShared() {
   }
 }
 
-// ✅ Load all data
+//  Load all data
 async function loadDashboard() {
   console.log("🚀 Loading dashboard...");
   
