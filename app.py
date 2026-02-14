@@ -46,7 +46,7 @@ def login_page():
     return render_template("login.html")  
 
 @app.route("/google-callback")
-def login_page():
+def google_callback():
     return render_template("login.html")  
 
 @app.route("/register")
