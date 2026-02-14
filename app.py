@@ -30,7 +30,7 @@ def handle_uncaught_exceptions(e):
     err_id = uuid.uuid4().hex
     tb = traceback.format_exc()
     logging.error('Error id %s: %s', err_id, tb)
-    
+
     return (f"Internal Server Error\nError id: {err_id}"), 500
 
 
@@ -42,6 +42,10 @@ def landing():
     return render_template("landing.html")  
 
 @app.route("/login")
+def login_page():
+    return render_template("login.html")  
+
+@app.route("/google-callback")
 def login_page():
     return render_template("login.html")  
 
