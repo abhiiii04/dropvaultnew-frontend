@@ -41,261 +41,91 @@
     background: #4f46e5;
     color: #fff;
   }
-  
-  /* Updated sidebar styles */
-  .sidebar {
-    width: 260px;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    background: #ffffff;
-    padding: 20px 15px;
-    z-index: 100;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-    border-right: 1px solid #e5e7eb;
-  }
-  
-  body.dark .sidebar {
-    background: #020617;
-    border-right: 1px solid #334155;
-  }
-  
-  .sidebar-logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 10px;
-    margin-bottom: 30px;
-  }
-  
-  .sidebar-logo-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 20px;
-  }
-  
-  .sidebar-logo h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #4338ca;
-    margin: 0;
-  }
-  
-  body.dark .sidebar-logo h1 {
-    color: #818cf8;
-  }
-  
-  .sidebar-section {
-    margin-bottom: 25px;
-  }
-  
-  .sidebar-section-title {
-    text-transform: uppercase;
-    font-size: 12px;
-    font-weight: 600;
-    color: #9ca3af;
-    padding: 0 15px;
-    margin-bottom: 12px;
-    letter-spacing: 1px;
-  }
-  
-  body.dark .sidebar-section-title {
-    color: #6b7280;
-  }
-  
-  .sidebar-nav {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .sidebar-nav-item {
-    padding: 10px 15px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.2s ease;
-    color: #4b5563;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-  }
-  
-  body.dark .sidebar-nav-item {
-    color: #cbd5e1;
-  }
-  
-  .sidebar-nav-item:hover {
-    background: #f3f4f6;
-    color: #4338ca;
-  }
-  
-  body.dark .sidebar-nav-item:hover {
-    background: #1e293b;
-    color: #818cf8;
-  }
-  
-  .sidebar-nav-item.active {
-    background: #eef2ff;
-    color: #4338ca;
-    font-weight: 600;
-  }
-  
-  body.dark .sidebar-nav-item.active {
-    background: #1e293b;
-    color: #818cf8;
-  }
-  
-  .sidebar-nav-item i {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-  }
-  
-  .sidebar-storage {
-    padding: 15px;
-    border-radius: 12px;
-    background: #f8fafc;
-    margin-top: 15px;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  body.dark .sidebar-storage {
-    background: #1e293b;
-  }
-  
-  .sidebar-storage h3 {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0 0 8px;
-  }
-  
-  body.dark .sidebar-storage h3 {
-    color: #9ca3af;
-  }
-  
-  .sidebar-storage .storage-bar {
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  body.dark .sidebar-storage .storage-bar {
-    background: #334155;
-  }
-  
-  .sidebar-storage .storage-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
-    border-radius: 4px;
-    width: 0%;
-  }
-  
-  .sidebar-user {
-    margin-top: 25px;
-    padding: 15px;
-    border-radius: 12px;
-    background: #f8fafc;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  body.dark .sidebar-user {
-    background: #1e293b;
-  }
-  
-  .sidebar-user-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .sidebar-user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-  }
-  
-  .sidebar-user-info {
-    flex: 1;
-  }
-  
-  .sidebar-user-info h3 {
-    font-size: 14px;
-    margin: 0 0 4px;
-    color: #1e293b;
-  }
-  
-  body.dark .sidebar-user-info h3 {
-    color: #e2e8f0;
-  }
-  
-  .sidebar-user-info p {
-    font-size: 12px;
-    color: #6b7280;
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  body.dark .sidebar-user-info p {
-    color: #9ca3af;
-  }
-  
-  .sidebar-signout {
-    width: 100%;
-    padding: 12px 15px;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-  }
-  
-  .sidebar-signout:hover {
-    background: #dc2626;
-    transform: translateY(-1px);
-  }
-  
-  .sidebar-icon {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-  }
+</style>
+
+
+  <!-- ================= CHATBOT STYLES ================= -->
+  <style>
+    .chatbot-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 9999;
+    }
+
+    .chatbot-box {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      width: 320px;
+      height: 420px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+    }
+
+    .chatbot-header {
+      padding: 12px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chatbot-messages {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    .chatbot-message {
+      margin-bottom: 10px;
+    }
+
+    .chatbot-message.bot {
+      color: #111827;
+    }
+
+    .chatbot-message.user {
+      text-align: right;
+      color: #4f46e5;
+      font-weight: 500;
+    }
+
+    .chatbot-input {
+      display: flex;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .chatbot-input input {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      outline: none;
+    }
+
+    .chatbot-input button {
+      border: none;
+      background: #4f46e5;
+      color: #fff;
+      padding: 0 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -303,84 +133,16 @@
 
   <!-- ================= SIDEBAR ================= -->
   <div class="sidebar">
-    <!-- Logo Section -->
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">🔒</div>
-      <h1>DropVault</h1>
-    </div>
-    
-    <!-- Navigation -->
-    <div class="sidebar-section">
-      <h2 class="sidebar-section-title">MAIN</h2>
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-item active">
-          <span class="sidebar-icon">🏠</span>
-          <span>Home</span>
-        </li>
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">⬆️</span>
-          <span>Upload</span>
-        </li>
-      </ul>
-    </div>
-    
-    <div class="sidebar-section">
-      <h2 class="sidebar-section-title">FILES</h2>
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">📁</span>
-          <span>My Files</span>
-        </li>
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">🔗</span>
-          <span>Shared</span>
-        </li>
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">🗑️</span>
-          <span>Trash</span>
-        </li>
-      </ul>
-    </div>
-    
-    <div class="sidebar-section">
-      <h2 class="sidebar-section-title">ACCOUNT</h2>
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">⚙️</span>
-          <span>Settings</span>
-        </li>
-        <li class="sidebar-nav-item">
-          <span class="sidebar-icon">✨</span>
-          <span>Upgrade</span>
-        </li>
-      </ul>
-    </div>
-    
-    <!-- Storage Section -->
-    <div class="sidebar-storage">
-      <h3>Storage</h3>
-      <div class="storage-bar">
-        <div class="storage-fill" id="storageFill" style="width: 0%"></div>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-top: 6px;">
-        <span id="storageUsed">0.00 GB</span>
-        <span id="storageTotal">/ 10 GB</span>
-      </div>
-    </div>
-    
-    <!-- User Profile -->
-    <div class="sidebar-user">
-      <div class="sidebar-user-profile">
-        <div class="sidebar-user-avatar" id="userAvatar">A</div>
-        <div class="sidebar-user-info">
-          <h3 id="userName">Abhiti</h3>
-          <p id="userEmail">abhitr...@gmail.com</p>
-        </div>
-      </div>
-      <button class="sidebar-signout" id="logoutBtn">
-        <span>🚪</span> Sign Out
-      </button>
-    </div>
+    <h2>DropVault</h2>
+    <nav>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/upload">Upload</a>
+      <a href="/myfiles">My Files</a>
+      <a href="/shared">Shared Files</a>
+      <a href="/trash">Trash</a>
+      <a href="/settings">Settings</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </nav>
   </div>
 
   <!-- ================= MAIN CONTENT ================= -->
@@ -402,7 +164,7 @@
 
     <div class="chatbot-messages" id="chatMessages">
       <div class="chatbot-message bot">
-        👋 Hi! I'm your DropVault assistant. Ask me about login, upload, storage, or security.
+        👋 Hi! I’m your DropVault assistant. Ask me about login, upload, storage, or security.
       </div>
     </div>
 
@@ -423,39 +185,6 @@
       localStorage.removeItem("token");
       localStorage.removeItem("authToken");
       window.location.href = "/login";
-    });
-    
-    // Add active class based on current URL
-    document.addEventListener('DOMContentLoaded', () => {
-      const path = window.location.pathname;
-      const navItems = document.querySelectorAll('.sidebar-nav-item');
-      
-      navItems.forEach(item => {
-        item.classList.remove('active');
-        
-        // Determine if this item should be active
-        const href = item.querySelector('span').textContent.toLowerCase();
-        const isHome = path === '/dashboard' || path === '/';
-        const isUpload = path === '/upload';
-        const isMyFiles = path === '/myfiles';
-        const isShared = path === '/shared';
-        const isTrash = path === '/trash';
-        const isSettings = path === '/settings';
-        
-        if (href === 'home' && isHome) {
-          item.classList.add('active');
-        } else if (href === 'upload' && isUpload) {
-          item.classList.add('active');
-        } else if (href === 'my files' && isMyFiles) {
-          item.classList.add('active');
-        } else if (href === 'shared' && isShared) {
-          item.classList.add('active');
-        } else if (href === 'trash' && isTrash) {
-          item.classList.add('active');
-        } else if (href === 'settings' && isSettings) {
-          item.classList.add('active');
-        }
-      });
     });
   </script>
 
@@ -483,7 +212,7 @@
     /* ================= STANDARD FAQ ================= */
 
     const FAQS = [
-      { k: ["create", "register", "sign up"], a: "📝 Click **Sign Up**, enter your email, verify it, and you're ready." },
+      { k: ["create", "register", "sign up"], a: "📝 Click **Sign Up**, enter your email, verify it, and you’re ready." },
       { k: ["login", "sign in"], a: "🔑 Login using email & password or **Continue with Google**." },
       { k: ["google"], a: "✅ DropVault supports secure Google Login." },
       { k: ["forgot", "reset password"], a: "🔐 Use **Forgot Password** on the login page." },
@@ -532,12 +261,7 @@
   if (savedTheme === "dark") {
     document.body.classList.add("dark");
   }
-  
-  // Update sidebar storage info from dashboard
-  if (document.querySelector('.dashboard')) {
-    // This will be populated from dashboard.js
-  }
-  </script>
+</script>
 
 </body>
 </html>
