@@ -33,82 +33,129 @@
   </div>
 
 <script>
-// FIXED: Removed trailing spaces
-// REPLACE THE ENTIRE GOOGLE INITIALIZATION AND HANDLER SECTION
-const API_BASE = "https://dropvault-backend.onrender.com"; // FIXED: Removed trailing spaces
+// FIXED: Removed ALL trailing spaces
+const API_BASE = "https://dropvault-backend.onrender.com";
 
-/* 1. GOOGLE LOGIN - REDIRECT FLOW (MATCHES BACKEND EXPECTATIONS) */
-document.getElementById("googleBtn").addEventListener("click", () => {
-  // Determine redirect_uri EXACTLY as backend expects (mimic backend logic)
-  const currentOrigin = window.location.origin;
-  let redirectUri;
-  
-  if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
-    redirectUri = 'http://localhost:3000/google-callback';
-  } else if (currentOrigin.includes('dropvaultnew-frontend.onrender.com')) {
-    redirectUri = 'https://dropvaultnew-frontend.onrender.com/google-callback'; // NO TRAILING SPACES
-  } else {
-    redirectUri = `${currentOrigin}/google-callback`;
+// ✅ CRITICAL FIX: Wrap ALL logic in DOMContentLoaded to avoid top-level returns
+document.addEventListener('DOMContentLoaded', () => {
+  // HANDLE GOOGLE CALLBACK (ONLY ON /google-callback ROUTE)
+  if (window.location.pathname === '/google-callback') {
+    handleGoogleCallback();
+    return; // Safe inside DOMContentLoaded handler
   }
 
-  // Construct Google OAuth URL (redirect flow - NOT popup)
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
-    `client_id=100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `response_type=code&` +
-    `scope=email%20profile%20openid&` +
-    `access_type=offline&` +
-    `prompt=consent`;
-
-  // Redirect user to Google (backend expects this flow)
-  window.location.href = googleAuthUrl;
+  // NORMAL LOGIN PAGE LOGIC (email form + Google button)
+  initLoginPage();
 });
 
-/* 2. HANDLE GOOGLE CALLBACK (ADD THIS NEW SECTION) */
-// ONLY executes when Google redirects back to /google-callback
-if (window.location.pathname === '/google-callback') {
-  const urlParams = new URLSearchParams(window.location.search);
-  const authCode = urlParams.get('code');
-  const error = urlParams.get('error');
+// CALLBACK HANDLER (runs ONLY on /google-callback)
+async function handleGoogleCallback() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const error = urlParams.get('error');
 
-  if (error) {
-    console.error('Google OAuth error:', error);
-    alert(`Google login failed: ${error}`);
-    window.history.replaceState({}, document.title, '/login'); // Clean URL
-    window.location.href = '/login';
-    return;
-  }
+    if (error) {
+      console.error('Google OAuth error:', error);
+      alert(`Google login failed: ${error}`);
+      window.history.replaceState({}, document.title, '/login');
+      window.location.href = '/login';
+      return;
+    }
 
-  if (authCode) {
-    // Send code to backend EXACTLY as expected
-    fetch(`${API_BASE}/api/auth/google/`, {
+    if (!authCode) {
+      throw new Error('No authorization code received');
+    }
+
+    console.log("✅ Sending auth code to backend...");
+    const res = await fetch(`${API_BASE}/api/auth/google/`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ code: authCode }), // Backend expects "code" key
+      body: JSON.stringify({ code: authCode }),
       credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('authToken', data.token);
-        // Clean URL before redirect
-        window.history.replaceState({}, document.title, '/');
-        window.location.href = '/dashboard';
-      } else {
-        throw new Error(data.message || 'Invalid response from server');
-      }
-    })
-    .catch(err => {
-      console.error('Google callback error:', err);
-      alert(`Login failed: ${err.message}`);
-      window.history.replaceState({}, document.title, '/login');
-      window.location.href = '/login';
     });
+
+    const data = await res.json();
+    console.log("📡 Backend response:", res.status, data);
+
+    if (!res.ok) {
+      const errorMsg = data.message || data.error || `Login failed (${res.status})`;
+      throw new Error(errorMsg);
+    }
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('authToken', data.token);
+      window.history.replaceState({}, document.title, '/');
+      window.location.href = '/dashboard';
+    } else {
+      throw new Error("No token received from backend");
+    }
+  } catch (err) {
+    console.error('💥 Callback error:', err);
+    alert(`Login failed: ${err.message}`);
+    window.history.replaceState({}, document.title, '/login');
+    window.location.href = '/login';
   }
+}
+
+// NORMAL LOGIN PAGE INITIALIZATION
+function initLoginPage() {
+  // GOOGLE BUTTON: Redirect flow (MATCHES BACKEND)
+  document.getElementById("googleBtn")?.addEventListener("click", () => {
+    const currentOrigin = window.location.origin;
+    let redirectUri;
+    
+    if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
+      redirectUri = 'http://localhost:3000/google-callback';
+    } else if (currentOrigin.includes('dropvaultnew-frontend.onrender.com')) {
+      redirectUri = 'https://dropvaultnew-frontend.onrender.com/google-callback'; // NO TRAILING SPACES
+    } else {
+      redirectUri = `${currentOrigin}/google-callback`;
+    }
+
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+      `client_id=100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=email%20profile%20openid&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    window.location.href = googleAuthUrl;
+  });
+
+  // EMAIL LOGIN FORM
+  document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include"
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("authToken", data.token);
+        window.location.href = "/dashboard";
+      } else {
+        alert(data.message || "Invalid email or password");
+      }
+    } catch (err) { 
+      console.error("Email login error:", err);
+      alert("Network error. Please check your connection.");
+    }
+  });
 }
 </script>
 </body>
