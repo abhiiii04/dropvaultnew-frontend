@@ -5,7 +5,10 @@
   <title>Login - DropVault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/css/style.css">
-  <!-- REMOVED: Google Identity Services script (not needed for redirect flow) -->
+  
+  <!-- FIXED: Removed trailing space in src -->
+  <!-- REPLACE THE EXISTING GOOGLE SCRIPT TAG -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body class="auth">
@@ -30,114 +33,82 @@
   </div>
 
 <script>
-// FIXED: Clean API base URL (NO trailing spaces)
-const API_BASE = "https://dropvault-backend.onrender.com";
+// FIXED: Removed trailing spaces
+// REPLACE THE ENTIRE GOOGLE INITIALIZATION AND HANDLER SECTION
+const API_BASE = "https://dropvault-backend.onrender.com"; // FIXED: Removed trailing spaces
 
-// 🔑 GOOGLE OAUTH CALLBACK HANDLER (Runs ONLY on /google-callback route)
+/* 1. GOOGLE LOGIN - REDIRECT FLOW (MATCHES BACKEND EXPECTATIONS) */
+document.getElementById("googleBtn").addEventListener("click", () => {
+  // Determine redirect_uri EXACTLY as backend expects (mimic backend logic)
+  const currentOrigin = window.location.origin;
+  let redirectUri;
+  
+  if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
+    redirectUri = 'http://localhost:3000/google-callback';
+  } else if (currentOrigin.includes('dropvaultnew-frontend.onrender.com')) {
+    redirectUri = 'https://dropvaultnew-frontend.onrender.com/google-callback'; // NO TRAILING SPACES
+  } else {
+    redirectUri = `${currentOrigin}/google-callback`;
+  }
+
+  // Construct Google OAuth URL (redirect flow - NOT popup)
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=email%20profile%20openid&` +
+    `access_type=offline&` +
+    `prompt=consent`;
+
+  // Redirect user to Google (backend expects this flow)
+  window.location.href = googleAuthUrl;
+});
+
+/* 2. HANDLE GOOGLE CALLBACK (ADD THIS NEW SECTION) */
+// ONLY executes when Google redirects back to /google-callback
 if (window.location.pathname === '/google-callback') {
   const urlParams = new URLSearchParams(window.location.search);
   const authCode = urlParams.get('code');
   const error = urlParams.get('error');
-  
-  // Clean URL immediately to remove auth code from history/address bar
-  window.history.replaceState({}, document.title, '/');
 
   if (error) {
     console.error('Google OAuth error:', error);
     alert(`Google login failed: ${error}`);
+    window.history.replaceState({}, document.title, '/login'); // Clean URL
     window.location.href = '/login';
-    throw new Error('Google OAuth error');
+    return;
   }
 
-  if (!authCode) {
-    console.error('Missing authorization code in callback');
-    alert('Invalid Google callback response');
-    window.location.href = '/login';
-    throw new Error('Missing auth code');
-  }
-
-  // Exchange code with backend EXACTLY as expected
-  fetch(`${API_BASE}/api/auth/google/`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({ code: authCode }), // Backend expects "code" key
-    credentials: 'include'
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(data => {
-        throw new Error(data.message || data.error || `Login failed (${response.status})`);
-      });
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('authToken', data.token); // Dashboard compatibility
-      console.log('✅ Google login successful! Redirecting to dashboard...');
-      window.location.href = '/dashboard';
-    } else {
-      throw new Error('No token received from backend');
-    }
-  })
-  .catch(err => {
-    console.error('💥 Google callback error:', err);
-    alert(`Google login failed: ${err.message}`);
-    window.location.href = '/login';
-  });
-}
-// 🔑 STANDARD LOGIN PAGE SETUP (Runs on /login route)
-else {
-  /* EMAIL LOGIN HANDLER (UNCHANGED) */
-  document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/login/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: "include"
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("authToken", data.token);
-        window.location.href = "/dashboard";
+  if (authCode) {
+    // Send code to backend EXACTLY as expected
+    fetch(`${API_BASE}/api/auth/google/`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ code: authCode }), // Backend expects "code" key
+      credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('authToken', data.token);
+        // Clean URL before redirect
+        window.history.replaceState({}, document.title, '/');
+        window.location.href = '/dashboard';
       } else {
-        alert(data.message || "Invalid email or password");
+        throw new Error(data.message || 'Invalid response from server');
       }
-    } catch (err) { 
-      console.error("Email login error:", err);
-      alert("Network error. Please check your connection.");
-    }
-  });
-
-  /* GOOGLE LOGIN BUTTON - REDIRECT FLOW (MATCHES BACKEND) */
-  document.getElementById("googleBtn").addEventListener("click", () => {
-    // Generate EXACT redirect_uri backend will use for token exchange
-    const redirectUri = window.location.origin + '/google-callback';
-    
-    // Construct Google OAuth URL (redirect flow)
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=100074614026-u5lmua7rt5jajqe9m0nkdfus01c1nkg6.apps.googleusercontent.com&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=code&` +
-      `scope=email%20profile%20openid&` +
-      `access_type=offline&` +
-      `prompt=consent`;
-    
-    // Redirect to Google (backend expects this flow)
-    window.location.href = googleAuthUrl;
-  });
+    })
+    .catch(err => {
+      console.error('Google callback error:', err);
+      alert(`Login failed: ${err.message}`);
+      window.history.replaceState({}, document.title, '/login');
+      window.location.href = '/login';
+    });
+  }
 }
 </script>
 </body>
