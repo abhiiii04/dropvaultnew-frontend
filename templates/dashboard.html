@@ -36,6 +36,12 @@
   border: 1px solid #e5e7eb;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* PROFILE */
 .profile {
   display: flex;
   align-items: center;
@@ -57,6 +63,17 @@
   font-weight: 700;
 }
 
+/* WELCOME */
+.welcome h1 {
+  font-size: 30px;
+  margin-bottom: 6px;
+}
+
+.welcome p {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
 /* STATS */
 .stats {
   display: grid;
@@ -73,7 +90,7 @@
 }
 
 .stat-card h2 { font-size: 26px; }
-.stat-card span { color: var(--muted); }
+.stat-card span { color: var(--muted); font-size: 14px; }
 
 /* STORAGE */
 .storage {
@@ -97,7 +114,7 @@
   width: 0%;
 }
 
-/* FILES */
+/* FILES - UPDATED WITH ICONS */
 .files {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
@@ -108,26 +125,55 @@
   background: var(--card);
   border-radius: var(--radius);
   padding: 16px;
-}
-
-.file-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.file:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.08);
 }
 
 .file-icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.file strong {
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-info strong {
   display: block;
+  margin-bottom: 3px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
 }
 
-.file span {
+.file-info span {
   font-size: 13px;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* SHARED */
@@ -141,19 +187,25 @@
 
 <div class="dashboard">
 
+  <!-- WELCOME -->
   <div class="welcome">
     <h1 id="welcomeTitle">Welcome to DropVault</h1>
     <p>Secure. Simple. Yours</p>
   </div>
 
+  <!-- TOP BAR -->
   <div class="topbar">
     <input class="search" placeholder="Search your files..." />
-    <div class="profile">
-      <div class="avatar" id="avatar">U</div>
-      <strong id="profileName">User</strong>
+
+    <div class="top-actions">
+      <div class="profile">
+        <div class="avatar" id="avatar">U</div>
+        <strong id="profileName" style="color:#000;">User</strong>
+      </div>
     </div>
   </div>
 
+  <!-- STATS -->
   <div class="stats">
     <div class="stat-card"><h2 id="totalFiles">0</h2><span>Total Files</span></div>
     <div class="stat-card"><h2 id="imageCount">0</h2><span>Images</span></div>
@@ -161,15 +213,18 @@
     <div class="stat-card"><h2 id="videoCount">0</h2><span>Videos</span></div>
   </div>
 
+  <!-- STORAGE -->
   <div class="storage">
     <strong>Storage Used</strong>
-    <p id="storageText">0 B / 10 GB</p>
+    <p id="storageText">0 GB / 0 GB</p>
     <div class="bar"><div class="bar-fill" id="storageBar"></div></div>
   </div>
 
+  <!-- RECENT FILES -->
   <h3>Recent Files</h3>
   <div class="files" id="recentFiles"></div>
 
+  <!-- SHARED -->
   <div class="shared">
     <h3>Shared Files</h3>
     <p id="sharedCount">0 shared</p>
@@ -180,71 +235,216 @@
 <script>
 const API = "https://dropvault-backend.onrender.com";
 
-/* ✅ FILE TYPE ICONS */
-const ICONS = {
-  image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
-  video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
-  doc:   "https://cdn-icons-png.flaticon.com/512/337/337946.png",
-  other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
-};
-
+// ✅ Get token and format it correctly
 const storedToken = localStorage.getItem("token") || localStorage.getItem("authToken");
-const token = storedToken?.startsWith("Token ") ? storedToken : `Token ${storedToken}`;
+const token = storedToken ? (storedToken.startsWith('Token ') ? storedToken : `Token ${storedToken}`) : null;
 
-if (!storedToken) window.location.href = "/accounts/login/";
+console.log("🔐 Auth token:", token ? "Present" : "Missing");
 
-async function apiCall(endpoint) {
-  const res = await fetch(`${API}${endpoint}`, {
-    headers: {
-      Authorization: token,
-      Accept: "application/json",
-      "Content-Type": "application/json"
-    },
-    credentials: "include"
-  });
-
-  if (res.status === 401) {
-    localStorage.clear();
-    window.location.href = "/accounts/login/";
-    return null;
-  }
-  return res.json();
+// ✅ Check if user is authenticated
+if (!token) {
+  console.log("❌ No token found, redirecting to login...");
+  window.location.href = "/accounts/login/";
 }
 
+// ✅ Helper function for API calls
+async function apiCall(endpoint) {
+  try {
+    const response = await fetch(`${API}${endpoint}`, {
+      method: "GET",
+      headers: {
+        "Authorization": token,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      credentials: "include"
+    });
+    
+    if (response.status === 401) {
+      console.log("❌ Unauthorized - clearing token and redirecting");
+      localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
+      window.location.href = "/accounts/login/";
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`❌ API Error (${endpoint}):`, error);
+    return null;
+  }
+}
+
+// ✅ Load User Profile
+async function loadProfile() {
+  const data = await apiCall("/api/user/");
+  console.log("👤 Profile data:", data);
+  
+  if (data && data.success) {
+    const user = data.data || data.user || data;
+    const name = user.name || user.username || user.email?.split('@')[0] || "User";
+    
+    document.getElementById("profileName").innerText = name;
+    document.getElementById("avatar").innerText = name[0].toUpperCase();
+    document.getElementById("welcomeTitle").innerText = `Welcome, ${name}`;
+    
+    console.log("✅ Profile loaded:", name);
+  } else {
+    console.log("⚠️ Profile load failed:", data);
+  }
+}
+
+// ✅ Load Storage Info
+async function loadStorage() {
+  const data = await apiCall("/api/user/storage/");
+  console.log("💾 Storage data:", data);
+  
+  if (data && data.success && data.storage) {
+    const storage = data.storage;
+    const usedFormatted = storage.used_formatted || "0 B";
+    const limitFormatted = storage.limit_formatted || "10 GB";
+    const percentage = storage.percentage || 0;
+    
+    document.getElementById("storageText").innerText = `${usedFormatted} / ${limitFormatted}`;
+    document.getElementById("storageBar").style.width = `${Math.min(percentage, 100)}%`;
+    
+    console.log("✅ Storage loaded:", usedFormatted, "/", limitFormatted);
+  } else {
+    console.log("⚠️ Storage load failed:", data);
+    document.getElementById("storageText").innerText = "0 B / 10 GB";
+  }
+}
+
+// ✅ Load Files
 async function loadFiles() {
   const data = await apiCall("/api/list/");
-  if (!data) return;
-
-  const files = data.files || data.your_files || [];
-  document.getElementById("totalFiles").innerText = files.length;
-
-  const recentHtml = files.slice(0,4).map(f => {
-    const name = f.filename || f.original_name || "Unknown";
-    const size = ((f.size_bytes || 0) / 1024 / 1024).toFixed(2);
-    const ext = name.split(".").pop().toLowerCase();
-
-    let icon = ICONS.other;
-    if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) icon = ICONS.image;
-    else if (["mp4","mov","avi","webm","mkv"].includes(ext)) icon = ICONS.video;
-    else if (["pdf","doc","docx","ppt","pptx","xls","xlsx","txt"].includes(ext)) icon = ICONS.doc;
-
-    return `
-      <div class="file">
-        <div class="file-row">
-          <img src="${icon}" class="file-icon">
-          <div>
-            <strong>${name}</strong>
-            <span>${size} MB</span>
+  console.log("📁 Files data:", data);
+  
+  if (data) {
+    const files = data.files || data.your_files || [];
+    document.getElementById("totalFiles").innerText = files.length;
+    
+    // File type counters
+    let img = 0, doc = 0, vid = 0;
+    
+    // File type detection helper
+    function getFileType(filename) {
+      const ext = (filename.split('.').pop() || '').toLowerCase().trim();
+      
+      const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "tiff"];
+      const videoExts = ["mp4", "mov", "avi", "webm", "mkv", "flv", "wmv", "m4v"];
+      const docExts = [
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", 
+        "csv", "md", "pages", "key", "numbers", "odt", "ods", "odp"
+      ];
+      
+      if (imageExts.includes(ext)) return "image";
+      if (videoExts.includes(ext)) return "video";
+      if (docExts.includes(ext)) return "doc";
+      return "other";
+    }
+    
+    // Icon mapping (cleaned URLs without trailing spaces)
+    const fileIcons = {
+      image: "https://cdn-icons-png.flaticon.com/512/1829/1829586.png",
+      video: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+      doc:   "https://cdn-icons-png.flaticon.com/512/337/337946.png",
+      other: "https://cdn-icons-png.flaticon.com/512/109/109612.png"
+    };
+    
+    // Count file types
+    files.forEach(f => {
+      const filename = f.filename || f.original_name || f.name || "";
+      const type = getFileType(filename);
+      if (type === "image") img++;
+      else if (type === "video") vid++;
+      else if (type === "doc") doc++;
+      // "other" not counted in stats per original implementation
+    });
+    
+    document.getElementById("imageCount").innerText = img;
+    document.getElementById("docCount").innerText = doc;
+    document.getElementById("videoCount").innerText = vid;
+    
+    // Format file size helper
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Generate recent files HTML with icons
+    const recentFilesHtml = files.slice(0, 4).map(f => {
+      const filename = f.filename || f.original_name || f.name || "Unknown file";
+      const fileType = getFileType(filename);
+      const iconUrl = fileIcons[fileType] || fileIcons.other;
+      const size = f.size_bytes || f.size || 0;
+      const formattedSize = formatFileSize(size);
+      
+      return `
+        <div class="file">
+          <img src="${iconUrl}" alt="${fileType} file icon" class="file-icon">
+          <div class="file-info">
+            <strong title="${filename}">${filename}</strong>
+            <span>${formattedSize}</span>
           </div>
+        </div>
+      `;
+    }).join("");
+    
+    document.getElementById("recentFiles").innerHTML = recentFilesHtml || `
+      <div class="file" style="justify-content:center;grid-column:1/-1">
+        <div class="file-info" style="text-align:center">
+          <strong>No files uploaded yet</strong>
+          <span>Upload your first file to get started</span>
         </div>
       </div>
     `;
-  }).join("");
-
-  document.getElementById("recentFiles").innerHTML = recentHtml || "<p>No files yet</p>";
+    
+    console.log("✅ Files loaded:", files.length);
+  } else {
+    console.log("⚠️ Files load failed");
+    document.getElementById("totalFiles").innerText = "0";
+    document.getElementById("recentFiles").innerHTML = `
+      <div class="file" style="justify-content:center;grid-column:1/-1">
+        <div class="file-info" style="text-align:center">
+          <strong>Unable to load files</strong>
+          <span>Please refresh the page</span>
+        </div>
+      </div>
+    `;
+  }
 }
 
-loadFiles();
+// ✅ Load Shared Files
+async function loadShared() {
+  const data = await apiCall("/api/shared/");
+  console.log("🔗 Shared data:", data);
+  
+  if (data) {
+    const list = Array.isArray(data) ? data : (data.shared || data.links || []);
+    document.getElementById("sharedCount").innerText = `${list.length} shared`;
+    console.log("✅ Shared loaded:", list.length);
+  } else {
+    document.getElementById("sharedCount").innerText = "0 shared";
+  }
+}
+
+// ✅ Load all data
+async function loadDashboard() {
+  console.log("🚀 Loading dashboard...");
+  
+  await loadProfile();
+  await loadStorage();
+  await loadFiles();
+  await loadShared();
+  
+  console.log("✅ Dashboard loaded!");
+}
+
+// Run on page load
+loadDashboard();
 </script>
 
 {% endblock %}
